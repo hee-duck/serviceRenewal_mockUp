@@ -486,6 +486,7 @@
                             <th class="sort" data-key="period">보증보험 기간</th>
                             <th class="sort" data-key="remain">보증보험 만료일</th>
                             <th class="sort" data-key="amount">보증보험 금액</th>
+                            <th class="sort" data-key="salesRecent3M">직전 3개월 청구액(합)</th>
                             <th>요금관리자</th>
                             <th>요금관리자 연락처</th>
                             <th>요금관리자 이메일</th>
@@ -571,29 +572,6 @@
         </div>
     </dialog>
 
-    <!-- 파일 업로드 모달 -->
-    <!-- <dialog id="dlgUpload">
-        <div class="modal">
-            <header>
-                <h3>서류 업로드</h3><button onclick="dlgUpload.close()">닫기</button>
-            </header>
-            <div class="body">
-                <div class="form-row">
-                    <div class="label">고객</div>
-                    <div id="uploadTarget"></div>
-                </div>
-                <div class="form-row">
-                    <div class="label">파일</div><input id="fileInput" type="file" accept="application/pdf">
-                </div>
-                <div class="muted">PDF만 업로드 가능 (Mock 저장: 파일명만 보관)</div>
-                <div id="uploadedList"></div>
-            </div>
-            <div class="footer">
-                <button onclick="saveUpload()" class="primary">저장</button>
-            </div>
-        </div>
-    </dialog> -->
-
     <!-- 템플릿 관리 모달 (v1.1) -->
     <dialog id="dlgTpl">
         <div class="modal">
@@ -675,14 +653,14 @@
     <script>
         // --- Mock 데이터 -------------------------------------------------
         const sample = [
-            { id: "a2m_innopolis", company: "에이엠이노폴리스(주)", policyNo: "2025-0022-2722", period: ["2025-02-05", "2026-02-04"], remainDays: 117, amount: 4000, manager: "장*진", phone: "022****9954", email: "leu******@crescty.co.kr", mailSent: "", alimSent: "", status: "대기", memo: "", files: [] },
-            { id: "do_dreamsys", company: "두드림시스템", policyNo: "2025-0026-6550", period: ["2025-10-15", "2026-05-16"], remainDays: 218, amount: null, manager: "김*택", phone: "undefined", email: "kz1***@hanmail.net", mailSent: "", alimSent: "", status: "대기", memo: "", files: [] },
-            { id: "hansunginst", company: "한성계기", policyNo: "2024-0500-3647", period: ["2024-10-16", "2025-10-15"], remainDays: 66, amount: null, manager: "박*욱", phone: "undefined", email: "han*****@naver.com", mailSent: "", alimSent: "", status: "공지 완료", memo: "", files: [] },
-            { id: "frisbee", company: "주식회사 프리스비", policyNo: "2024-0544-5990", period: ["2024-12-05", "2025-12-04"], remainDays: 62, amount: null, manager: "노*규", phone: "051****3450", email: "***@naver.com", mailSent: "", alimSent: "", status: "대기", memo: "", files: [] },
-            { id: "mmk_8_2004", company: "한국아이바이오제닉스_엔지자학", policyNo: "2024-0510-3144", period: ["2024-12-05", "2025-12-04"], remainDays: 141, amount: 300, manager: "김*우", phone: "undefined", email: "kw***@viaqia.com", mailSent: "", alimSent: "", status: "보류", memo: "", files: [] },
-            { id: "livlogi", company: "리브로지", policyNo: "2024-0517-3794", period: ["2024-11-25", "2025-11-26"], remainDays: 45, amount: null, manager: "김*창", phone: "undefined", email: "ri*@gmail.com", mailSent: "", alimSent: "", status: "대기", memo: "", files: [] },
-            { id: "ysml626", company: "와이에스", policyNo: "2024-0533-2690", period: ["2024-10-15", "2025-10-15"], remainDays: 14, amount: null, manager: "임*연", phone: "010****1994", email: "glk***@naver.com", mailSent: "", alimSent: "", status: "대기", memo: "", files: [] }
+            { id: "a2m_innopolis", company: "에이엠이노폴리스(주)", policyNo: "2025-0022-2722", period: ["2025-02-05", "2026-02-04"], remainDays: 117, amount: 4000, salesRecent3M: 1850000, manager: "장*진", phone: "022****9954", email: "leu******@crescty.co.kr", mailSent: "", alimSent: "", status: "대기", memo: "", files: [] },
+            { id: "do_dreamsys", company: "두드림시스템", policyNo: "2025-0026-6550", period: ["2025-10-15", "2026-05-16"], remainDays: 218, amount: null, salesRecent3M: 2430000, manager: "김*택", phone: "undefined", email: "kz1***@hanmail.net", mailSent: "", alimSent: "", status: "대기", memo: "", files: [] },
+            { id: "hansunginst", company: "한성계기", policyNo: "2024-0500-3647", period: ["2024-10-16", "2025-10-15"], remainDays: 66, amount: null, salesRecent3M: 980000, manager: "박*욱", phone: "undefined", email: "han*****@naver.com", mailSent: "", alimSent: "", status: "공지 완료", memo: "", files: [] },
+            { id: "frisbee", company: "주식회사 프리스비", policyNo: "2024-0544-5990", period: ["2024-12-05", "2025-12-04"], remainDays: 62, amount: null, salesRecent3M: 5120000, manager: "노*규", phone: "051****3450", email: "***@naver.com", mailSent: "", alimSent: "", status: "대기", memo: "", files: [] },
+            { id: "livlogi", company: "리브로지", policyNo: "2024-0517-3794", period: ["2024-11-25", "2025-11-26"], remainDays: 45, amount: null, salesRecent3M: 1520000, manager: "김*창", phone: "undefined", email: "ri*@gmail.com", mailSent: "", alimSent: "", status: "대기", memo: "", files: [] },
+            { id: "ysml626", company: "와이에스", policyNo: "2024-0533-2690", period: ["2024-10-15", "2025-10-15"], remainDays: 14, amount: null, salesRecent3M: 2750000, manager: "임*연", phone: "010****1994", email: "glk***@naver.com", mailSent: "", alimSent: "", status: "대기", memo: "", files: [] }
         ];
+
 
         let TEMPLATES = JSON.parse(localStorage.getItem("bizmsg_templates") || "null") || [
             {
@@ -720,49 +698,56 @@
 
         function persist() { localStorage.setItem("bizmsg_gx_data", JSON.stringify(state.data)); localStorage.setItem("activeTplId", activeTplId); }
 
-        // --- 렌더링 ------------------------------------------------------
-        function render() {
-            const tbody = document.querySelector("#dataGrid tbody");
-            tbody.innerHTML = "";
-            const filters = state.filters;
-            let rows = state.data.filter(r => {
-                if (filters.id && !r.id.toLowerCase().includes(filters.id.toLowerCase())) return false;
-                if (filters.company && !r.company.includes(filters.company)) return false;
-                if (filters.due30 && !(r.remainDays <= 30)) return false;
-                if (filters.due60 && !(r.remainDays <= 60)) return false;
-                if (filters.status && r.status !== filters.status) return false;
-                if (filters.sent === "mail" && !r.mailSent) return false;
-                if (filters.sent === "alim" && !r.alimSent) return false;
-                if (filters.sent === "none" && (r.mailSent || r.alimSent)) return false;
-                // date filter on policy end
-                const end = r.period[1];
-                if (!between(end, filters.from, filters.to)) return false;
-                return true;
-            });
+// --- 렌더링 ------------------------------------------------------
+function render() {
+    const tbody = document.querySelector("#dataGrid tbody");
+    tbody.innerHTML = "";
 
-            // sort
-            if (state.sortKey) {
-                rows.sort((a, b) => {
-                    const k = state.sortKey, dir = state.sortDir;
-                    let va = a[k], vb = b[k];
-                    if (k === "period") { va = a.period[1]; vb = b.period[1]; }
-                    if (k === "remain") { va = a.remainDays; vb = b.remainDays; }
-                    if (k === "amount") { va = a.amount ?? 0; vb = b.amount ?? 0; }
-                    if (typeof va === "string") va = va.toLowerCase();
-                    if (typeof vb === "string") vb = vb.toLowerCase();
-                    return (va > vb ? 1 : va < vb ? -1 : 0) * dir;
-                });
-            }
+    const filters = state.filters;
+    let rows = state.data.filter(r => {
+        if (filters.id && !r.id.toLowerCase().includes(filters.id.toLowerCase())) return false;
+        if (filters.company && !r.company.includes(filters.company)) return false;
+        if (filters.due30 && !(r.remainDays <= 30)) return false;
+        if (filters.due60 && !(r.remainDays <= 60)) return false;
+        if (filters.status && r.status !== filters.status) return false;
+        if (filters.sent === "mail" && !r.mailSent) return false;
+        if (filters.sent === "alim" && !r.alimSent) return false;
+        if (filters.sent === "none" && (r.mailSent || r.alimSent)) return false;
+        const end = r.period[1];
+        if (!between(end, filters.from, filters.to)) return false;
+        return true;
+    });
 
-            const total = rows.length;
-            document.getElementById("resultInfo").textContent = `총 ${total}건`;
+    // sort
+    if (state.sortKey) {
+        rows.sort((a, b) => {
+            const k = state.sortKey, dir = state.sortDir;
+            let va = a[k], vb = b[k];
+            if (k === "period") { va = a.period[1]; vb = b.period[1]; }
+            if (k === "remain") { va = a.remainDays; vb = b.remainDays; }
+            if (k === "amount") { va = a.amount ?? 0; vb = b.amount ?? 0; }
+            if (typeof va === "string") va = va.toLowerCase();
+            if (typeof vb === "string") vb = vb.toLowerCase();
+            return (va > vb ? 1 : va < vb ? -1 : 0) * dir;
+        });
+    }
 
-            // pagination
-            const start = (state.page - 1) * state.pageSize;
-            rows.slice(start, start + state.pageSize).forEach((r, idx) => {
-                const tr = document.createElement("tr");
-                if (r.remainDays === 45 || r.remainDays === 30 || r.remainDays <= 30) tr.classList.add("highlight");
-                tr.innerHTML = `
+    const total = rows.length;
+    document.getElementById("resultInfo").textContent = `총 ${total}건`;
+
+    // 🔹 직전 3개월 계산용 월 범위 라벨 (예: 10월 → 7,8,9월)
+    const now = new Date();
+    const curMonth = now.getMonth() + 1; // JS는 0~11월 반환 → +1
+    // 현재월 기준 "직전 3개월" 계산
+    const months = [curMonth - 3, curMonth - 2, curMonth - 1].map(m => (m <= 0 ? m + 12 : m));
+    const monthLabel = months.map(m => `${m}월`).join(", ");
+
+    // pagination
+    const start = (state.page - 1) * state.pageSize;
+    rows.slice(start, start + state.pageSize).forEach((r, idx) => {
+        const tr = document.createElement("tr");
+        if (r.remainDays === 45 || r.remainDays === 30 || r.remainDays <= 30) tr.classList.add("highlight");
+        tr.innerHTML = `
       <td><input type="checkbox" class="rowcheck" data-id="${r.id}"></td>
       <td><a href="#" class="lnkDetail" data-id="${r.id}">${r.id}</a></td>
       <td>${r.company}</td>
@@ -770,6 +755,7 @@
       <td>${r.period[0]} ~ ${r.period[1]}</td>
       <td>${formatRemain(r.remainDays)}</td>
       <td>${formatAmount(r.amount)}</td>
+      <td>${formatAmount(r.salesRecent3M || 0)}<br><small class="muted">(${monthLabel})</small></td>
       <td>${maskName(r.manager)}</td>
       <td>${maskPhone(r.phone)}</td>
       <td>${maskEmail(r.email)}</td>
@@ -786,53 +772,55 @@
           <button data-id="${r.id}" class="btnMail">메일</button>
           <button data-id="${r.id}" class="btnAlim">알림톡</button>
         </div>
-      </td>
-    `;
-                tbody.appendChild(tr);
-            });
+      </td>`;
+        tbody.appendChild(tr);
+    });
 
-            renderPager(total);
-            bindRowEvents();
-            document.getElementById("activeTplName").textContent = TEMPLATES.find(t => t.id === activeTplId)?.name || "";
-        }
+    renderPager(total);
+    bindRowEvents();
+    document.getElementById("activeTplName").textContent =
+        TEMPLATES.find(t => t.id === activeTplId)?.name || "";
+}
 
-        function renderPager(total) {
-            const pager = document.getElementById("pager");
-            const pages = Math.max(1, Math.ceil(total / state.pageSize));
-            const cur = Math.min(state.page, pages);
-            state.page = cur;
-            let html = "";
-            html += `<span class="muted">페이지 ${cur}/${pages}</span>`;
-            html += `<button ${cur === 1 ? "disabled" : ""} data-p="prev">이전</button>`;
-            for (let i = 1; i <= pages && i <= 7; i++) {
-                html += `<button data-p="${i}" ${i === cur ? 'class="primary"' : ""}>${i}</button>`;
-            }
-            html += `<button ${cur === pages ? "disabled" : ""} data-p="next">다음</button>`;
-            pager.innerHTML = html;
-            pager.querySelectorAll("button").forEach(b => {
-                b.onclick = () => {
-                    const p = b.getAttribute("data-p");
-                    if (p === "prev") state.page = Math.max(1, state.page - 1);
-                    else if (p === "next") state.page += 1;
-                    else state.page = parseInt(p);
-                    render();
-                };
-            });
-        }
+function renderPager(total) {
+    const pager = document.getElementById("pager");
+    const pages = Math.max(1, Math.ceil(total / state.pageSize));
+    const cur = Math.min(state.page, pages);
+    state.page = cur;
+    let html = "";
+    html += `<span class="muted">페이지 ${cur}/${pages}</span>`;
+    html += `<button ${cur === 1 ? "disabled" : ""} data-p="prev">이전</button>`;
+    for (let i = 1; i <= pages && i <= 7; i++) {
+        html += `<button data-p="${i}" ${i === cur ? 'class="primary"' : ""}>${i}</button>`;
+    }
+    html += `<button ${cur === pages ? "disabled" : ""} data-p="next">다음</button>`;
+    pager.innerHTML = html;
+    pager.querySelectorAll("button").forEach(b => {
+        b.onclick = () => {
+            const p = b.getAttribute("data-p");
+            if (p === "prev") state.page = Math.max(1, state.page - 1);
+            else if (p === "next") state.page += 1;
+            else state.page = parseInt(p);
+            render();
+        };
+    });
+}
 
-        function bindRowEvents() {
-            document.querySelectorAll(".lnkDetail").forEach(a => a.onclick = (e) => { e.preventDefault(); openDetail(a.dataset.id) });
-            document.querySelectorAll(".btnMemo").forEach(btn => btn.onclick = () => openMemo(btn.dataset.id));
-            document.querySelectorAll(".btnUpload").forEach(btn => btn.onclick = () => openUpload(btn.dataset.id));
-            document.querySelectorAll(".btnMail").forEach(btn => btn.onclick = () => openSend(btn.dataset.id, "mail"));
-            document.querySelectorAll(".btnAlim").forEach(btn => btn.onclick = () => openSend(btn.dataset.id, "alim"));
-            document.querySelectorAll(".selStatus").forEach(sel => sel.onchange = () => {
-                const r = state.data.find(x => x.id === sel.dataset.id); r.status = sel.value; persist(); render();
-            });
-            document.getElementById("checkAll").onclick = (e) => {
-                document.querySelectorAll(".rowcheck").forEach(c => c.checked = e.target.checked);
-            }
-        }
+function bindRowEvents() {
+    document.querySelectorAll(".lnkDetail").forEach(a => a.onclick = (e) => { e.preventDefault(); openDetail(a.dataset.id) });
+    document.querySelectorAll(".btnMemo").forEach(btn => btn.onclick = () => openMemo(btn.dataset.id));
+    document.querySelectorAll(".btnUpload").forEach(btn => btn.onclick = () => openUpload(btn.dataset.id));
+    document.querySelectorAll(".btnMail").forEach(btn => btn.onclick = () => openSend(btn.dataset.id, "mail"));
+    document.querySelectorAll(".btnAlim").forEach(btn => btn.onclick = () => openSend(btn.dataset.id, "alim"));
+    document.querySelectorAll(".selStatus").forEach(sel => sel.onchange = () => {
+        const r = state.data.find(x => x.id === sel.dataset.id);
+        r.status = sel.value; persist(); render();
+    });
+    document.getElementById("checkAll").onclick = (e) => {
+        document.querySelectorAll(".rowcheck").forEach(c => c.checked = e.target.checked);
+    };
+}
+
 
         // --- 상세 보기 ---------------------------------------------------
         let currentId = null;
@@ -897,26 +885,6 @@
             r.memo = document.getElementById("memoText").value;
             persist(); dlgMemo.close(); render();
         }
-
-        // --- 파일 업로드 --------------------------------------------------
-        // let uploadId = null;
-        // function openUpload(id) {
-        //     uploadId = id;
-        //     document.getElementById("uploadTarget").textContent = id;
-        //     document.getElementById("fileInput").value = "";
-        //     const r = state.data.find(x => x.id === id);
-        //     document.getElementById("uploadedList").innerHTML = (r.files || []).map(f => `<span class="badge">${f}</span>`).join(" ");
-        //     dlgUpload.showModal();
-        // }
-        // function saveUpload() {
-        //     const inp = document.getElementById("fileInput");
-        //     if (!inp.files.length) { alert("파일을 선택하세요."); return; }
-        //     const name = inp.files[0].name;
-        //     const r = state.data.find(x => x.id === uploadId);
-        //     if (!r.files) r.files = [];
-        //     r.files.push(name);
-        //     persist(); dlgUpload.close(); render();
-        // }
 
         // --- 발송 ---------------------------------------------------------
         let sendType = "mail", sendId = null;
