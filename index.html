@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>비즈메시지 서비스 갱신 관리 (v1.0 mockUp)</title>
+    <style>
+        :root {
+            --bg: #f7f8fb;
+            --ink: #111827;
+            --muted: #6b7280;
+            --card: #ffffff;
+            --line: #e5e7eb;
+            --primary: #2563eb;
+            --accent: #10b981;
+            --warn: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", Arial, sans-serif;
+            background: var(--bg);
+            color: var(--ink)
+        }
+
+        header {
+            background: #1f2937;
+            color: #fff;
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px
+        }
+
+        header h1 {
+            font-size: 16px;
+            margin: 0;
+            font-weight: 700
+        }
+
+        header .crumbs {
+            font-size: 12px;
+            color: #d1d5db
+        }
+
+        .container {
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 14px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, .04);
+            width: 100%;
+            /* 🔹화면 넓이의 90% */
+            max-width: 100%;
+            margin: 0 auto;
+            /* 🔹가운데 정렬 */
+            overflow-x: auto;
+            /* 🔹내부 그리드가 넘칠 경우 스크롤 허용 */
+            box-sizing: border-box;
+        }
+
+        /* 3행 그리드 + 열 폭 클램프(오버플로 방지) */
+        .toolbar {
+            display: grid;
+            grid-auto-rows: 36px;
+            /* [필터열 6칸(최대 220px)] [좌측여백 1fr] [우측버튼 3칸(최대 140px)] */
+            grid-template-columns: repeat(6, fit-content(220px)) 1fr repeat(3, fit-content(140px));
+            column-gap: 10px;
+            row-gap: 10px;
+            align-items: center;
+            overflow: hidden;
+            /* 아주 긴 내용으로 인한 넘침 방지 */
+        }
+
+        /* 1행: 발송여부까지 + D-30/60 + 검색/초기화 */
+        #qId,
+        #qCompany,
+        #qStatus,
+        #qSent,
+        #qDue30,
+        #qDue60,
+        #btnSearch,
+        #btnReset {
+            grid-row: 1;
+        }
+
+        /* 2행: 날짜 ~ 템플릿(좌측 정렬) */
+        #qFrom,
+        #qTo,
+        .pill,
+        #btnTpl {
+            grid-row: 2;
+        }
+
+        /* 3행: 끝 3칸에 고정 + 우측 정렬 */
+        #btnBulkMail {
+            grid-row: 3;
+            grid-column: -3;
+            justify-self: end;
+        }
+
+        #btnBulkAlim {
+            grid-row: 3;
+            grid-column: -2;
+            justify-self: end;
+        }
+
+        #btnExport {
+            grid-row: 3;
+            grid-column: -1;
+            justify-self: end;
+        }
+
+        .toolbar input[type=text],
+        .toolbar input[type=date],
+        .toolbar select {
+            height: 36px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fff;
+            padding: 0 10px;
+            min-width: 160px
+        }
+
+        .toolbar .check {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            height: 36px;
+            padding: 0 10px;
+            border: 1px dashed var(--line);
+            border-radius: 8px;
+            background: #fafafa
+        }
+
+        button {
+            display: inline-flex;
+            /* 내부 텍스트에 맞게 자동 크기 */
+            align-items: center;
+            justify-content: center;
+            height: 32px;
+            /* 살짝 낮춰 균형 맞춤 */
+            padding: 0 10px;
+            /* 좌우 여백 줄이기 */
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fff;
+            font-size: 13px;
+            line-height: 1.3;
+            cursor: pointer;
+            white-space: nowrap;
+            /* 줄바꿈 방지 */
+            width: auto;
+            /* 내용 기반 너비 */
+            min-width: unset;
+            /* min-width 강제값 제거 */
+            box-sizing: border-box;
+        }
+
+        .check {
+            display: inline-flex;
+            /* 내부 텍스트에 맞게 자동 크기 */
+            align-items: center;
+            justify-content: center;
+            height: 32px;
+            /* 살짝 낮춰 균형 맞춤 */
+            padding: 0 10px;
+            /* 좌우 여백 줄이기 */
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fff;
+            font-size: 13px;
+            line-height: 1.3;
+            cursor: pointer;
+            white-space: nowrap;
+            /* 줄바꿈 방지 */
+            width: auto;
+            /* 내용 기반 너비 */
+            min-width: unset;
+            /* min-width 강제값 제거 */
+            box-sizing: border-box;
+        }
+
+        /* 버튼 간 간격 조금 띄우기 */
+        .toolbar button {
+            margin-right: 6px;
+        }
+
+        button.primary {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff
+        }
+
+        button.warn {
+            background: var(--warn);
+            border-color: var(--warn)
+        }
+
+        button.ghost {
+            background: transparent
+        }
+
+        button:disabled {
+            opacity: .6;
+            cursor: not-allowed
+        }
+
+        .grid {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px
+        }
+
+        .grid th,
+        .grid td {
+            padding: 10px 8px;
+            border-bottom: 1px solid var(--line);
+            vertical-align: middle
+        }
+
+        .grid th {
+            background: #f3f4f6;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            text-align: left
+        }
+
+        .grid th.sort {
+            cursor: pointer
+        }
+
+        .grid th.sort::after {
+            content: "⇅";
+            font-size: 11px;
+            color: #9ca3af;
+            margin-left: 6px
+        }
+
+        .badge {
+            display: inline-block;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 2px 8px;
+            font-size: 12px;
+            background: #fff
+        }
+
+        .b-green {
+            background: #ecfdf5;
+            border-color: #a7f3d0;
+            color: #065f46
+        }
+
+        .b-yellow {
+            background: #fffbeb;
+            border-color: #fde68a;
+            color: #92400e
+        }
+
+        .b-red {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #991b1b
+        }
+
+        .muted {
+            color: var(--muted)
+        }
+
+        .row-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap
+        }
+
+        .pill {
+            display: inline-flex;
+            gap: 6px;
+            align-items: center;
+            padding: 0 10px;
+            height: 26px;
+            border-radius: 999px;
+            background: #eef2ff;
+            color: #3730a3;
+            font-size: 12px
+        }
+
+        .sticky-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px
+        }
+
+        .pagination {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            justify-content: flex-end;
+            margin-top: 10px
+        }
+
+        .pagination button {
+            height: 28px
+        }
+
+        .kebab {
+            cursor: pointer
+        }
+
+        .highlight {
+            background: #fff7ed
+        }
+
+        /* Modal */
+        dialog {
+            border: none;
+            border-radius: 12px;
+            width: min(900px, 95vw);
+            padding: 0;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .2)
+        }
+
+        .modal {
+            padding: 0
+        }
+
+        .modal header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #111827;
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 12px 12px 0 0
+        }
+
+        .modal header h3 {
+            margin: 0;
+            font-size: 15px
+        }
+
+        .modal .body {
+            padding: 14px;
+            max-height: 70vh;
+            overflow: auto
+        }
+
+        .modal .footer {
+            padding: 12px 14px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            border-top: 1px solid var(--line);
+            background: #fafafa;
+            border-radius: 0 0 12px 12px
+        }
+
+        .tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 8px
+        }
+
+        .tabs button {
+            height: 32px
+        }
+
+        .tabs button.active {
+            background: #eef2ff;
+            border-color: #c7d2fe;
+            color: #111827
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 8px
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 100px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 8px
+        }
+
+        input[type=file] {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 6px;
+            background: #fff
+        }
+
+        .label {
+            font-size: 12px;
+            color: #374151
+        }
+
+        .table-mini {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px
+        }
+
+        .table-mini th,
+        .table-mini td {
+            border-bottom: 1px solid var(--line);
+            padding: 6px 8px
+        }
+
+        .right {
+            float: right
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>비즈메시지 서비스 갱신 관리</h1>
+        <div class="crumbs">영업 / 고객 관리 / 비즈메시지 서비스 갱신 관리</div>
+    </header>
+
+    <div class="container">
+        <section class="card">
+            <div class="toolbar">
+                <input id="qId" type="text" placeholder="고객 아이디 검색">
+                <input id="qCompany" type="text" placeholder="회사명 검색">
+                <label class="check"><input id="qDue30" type="checkbox"> 만료일 30일 이하</label>
+                <label class="check"><input id="qDue60" type="checkbox"> 만료일 60일 이하</label>
+                <select id="qStatus">
+                    <option value="">처리현황(전체)</option>
+                    <option>대기</option>
+                    <option>공지 완료</option>
+                    <option>갱신 완료</option>
+                    <option>보류</option>
+                </select>
+                <select id="qSent">
+                    <option value="">발송여부(전체)</option>
+                    <option value="mail">메일 발송됨</option>
+                    <option value="alim">알림톡 발송됨</option>
+                    <option value="none">미발송</option>
+                </select>
+                <input id="qFrom" type="date">
+                <input id="qTo" type="date">
+                <button class="primary" id="btnSearch">검색</button>
+                <button class="ghost" id="btnReset">초기화</button>
+                <span class="pill" title="현재 활성 템플릿"><strong>활성 템플릿:</strong> <span id="activeTplName">갱신
+                        안내(1차)</span></span>
+                <button id="btnTpl">템플릿 관리</button>
+                <div style="flex:1"></div>
+                <button id="btnBulkMail">선택 메일 발송</button>
+                <button id="btnBulkAlim">선택 알림톡 발송</button>
+                <button class="warn" id="btnExport">엑셀 다운로드(Mock)</button>
+            </div>
+
+            <div class="sticky-actions">
+                <div class="muted" id="resultInfo">총 0건</div>
+                <div class="muted">D-45 / D-30 자동 알림 대상 행은 하이라이트됩니다.</div>
+            </div>
+
+            <div style="overflow:auto;max-height:60vh">
+                <table class="grid" id="dataGrid">
+                    <thead>
+                        <tr>
+                            <th style="width:34px"><input type="checkbox" id="checkAll"></th>
+                            <th class="sort" data-key="id">고객 아이디</th>
+                            <th class="sort" data-key="company">회사</th>
+                            <th>증권번호</th>
+                            <th class="sort" data-key="period">보증보험 기간</th>
+                            <th class="sort" data-key="remain">보증보험 만료일</th>
+                            <th class="sort" data-key="amount">보증보험 금액</th>
+                            <th>요금관리자</th>
+                            <th>요금관리자 연락처</th>
+                            <th>요금관리자 이메일</th>
+                            <th>메일 발송일</th>
+                            <th>알림톡 발송일</th>
+                            <th>처리현황</th>
+                            <th style="min-width:220px">액션</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div class="pagination" id="pager"></div>
+        </section>
+    </div>
+
+    <!-- 상세 모달 -->
+    <dialog id="dlgDetail">
+        <div class="modal">
+            <header>
+                <h3>상세 보기</h3>
+                <button onclick="closeDetail()">닫기</button>
+            </header>
+            <div class="body">
+                <div class="tabs">
+                    <button data-tab="basic" class="active">기본정보</button>
+                    <button data-tab="ins">보증보험정보</button>
+                    <button data-tab="logs">발송이력</button>
+                    <button data-tab="reply">고객응답</button>
+                </div>
+                <div class="tab-panel" id="tab-basic"></div>
+                <div class="tab-panel" id="tab-ins" hidden></div>
+                <div class="tab-panel" id="tab-logs" hidden></div>
+                <div class="tab-panel" id="tab-reply" hidden></div>
+            </div>
+            <div class="footer">
+                <button id="btnDetailMail">메일 발송</button>
+                <button id="btnDetailAlim">알림톡 발송</button>
+                <button class="primary" onclick="closeDetail()">확인</button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- 메모 모달 -->
+    <dialog id="dlgMemo">
+        <div class="modal">
+            <header>
+                <h3>메모</h3><button onclick="dlgMemo.close()">닫기</button>
+            </header>
+            <div class="body">
+                <div class="form-row">
+                    <div class="label">고객</div>
+                    <div id="memoTarget"></div>
+                </div>
+                <textarea id="memoText" placeholder="내부 메모를 입력하세요."></textarea>
+            </div>
+            <div class="footer">
+                <button onclick="saveMemo()" class="primary">저장</button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- 발송 모달 -->
+    <dialog id="dlgSend">
+        <div class="modal">
+            <header>
+                <h3 id="sendTitle">발송</h3><button onclick="dlgSend.close()">닫기</button>
+            </header>
+            <div class="body">
+                <div class="form-row">
+                    <div class="label">템플릿 선택</div>
+                    <select id="sendTpl"></select>
+                </div>
+                <div class="form-row">
+                    <div class="label">미리보기</div>
+                    <div id="tplPreview" class="card" style="padding:10px;white-space:pre-wrap"></div>
+                </div>
+            </div>
+            <div class="footer">
+                <button class="primary" id="btnDoSend">발송 실행(Mock)</button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- 파일 업로드 모달 -->
+    <dialog id="dlgUpload">
+        <div class="modal">
+            <header>
+                <h3>서류 업로드</h3><button onclick="dlgUpload.close()">닫기</button>
+            </header>
+            <div class="body">
+                <div class="form-row">
+                    <div class="label">고객</div>
+                    <div id="uploadTarget"></div>
+                </div>
+                <div class="form-row">
+                    <div class="label">파일</div><input id="fileInput" type="file" accept="application/pdf">
+                </div>
+                <div class="muted">PDF만 업로드 가능 (Mock 저장: 파일명만 보관)</div>
+                <div id="uploadedList"></div>
+            </div>
+            <div class="footer">
+                <button onclick="saveUpload()" class="primary">저장</button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- 템플릿 관리 모달 (v1.1) -->
+    <dialog id="dlgTpl">
+        <div class="modal">
+            <header>
+                <h3>템플릿 관리</h3><button onclick="dlgTpl.close()">닫기</button>
+            </header>
+            <div class="body">
+                <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
+                    <button id="tplNew">신규</button>
+                    <button id="tplClone">복제</button>
+                    <button id="tplDelete">삭제</button>
+                    <span class="muted">활성(1개)만 발송에 사용됩니다.</span>
+                </div>
+
+                <table class="table-mini" id="tplTable">
+                    <thead>
+                        <tr>
+                            <th style="width:60px">활성</th>
+                            <th>이름</th>
+                            <th style="width:90px">유형</th>
+                            <th>제목</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+
+                <hr style="border:none;border-top:1px solid var(--line);margin:12px 0">
+
+                <div id="tplFormWrap">
+                    <div class="form-row">
+                        <div class="label">ID</div>
+                        <div><input id="tplId" type="text" readonly style="background:#f9fafb;width:220px"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="label">이름</div>
+                        <div><input id="tplName" type="text" style="width:100%"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="label">유형</div>
+                        <div>
+                            <label><input type="radio" name="tplType" value="메일"> 메일</label>
+                            <label style="margin-left:12px"><input type="radio" name="tplType" value="알림톡"> 알림톡</label>
+                        </div>
+                    </div>
+                    <div class="form-row" id="tplKakaoChannelRow" hidden>
+                        <div class="label">카카오톡 채널</div>
+                        <div><input id="tplKakaoChannel" type="text" value="@비즈톡" readonly
+                                style="background:#f9fafb;width:220px"></div>
+                    </div>
+                    <div class="form-row" id="tplCodeRow" hidden>
+                        <div class="label">템플릿 코드</div>
+                        <div><input id="tplCode" type="text" placeholder="BTK_20241010_A001" style="width:100%"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="label">제목</div>
+                        <div><input id="tplSubject" type="text" style="width:100%"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="label">본문</div>
+                        <div><textarea id="tplBody" placeholder="템플릿 본문을 입력하세요."></textarea></div>
+                    </div>
+                    <div class="form-row" id="tplAlimPreviewRow" hidden>
+                        <div class="label">템플릿 미리보기</div>
+                        <div id="tplAlimPreview" class="card"
+                            style="padding:10px;white-space:pre-wrap;background:#fafafa"></div>
+                    </div>
+                    <div style="display:flex;justify-content:flex-end;gap:8px">
+                        <button id="tplCancel" class="ghost">취소</button>
+                        <button id="tplSave" class="primary">저장</button>
+                    </div>
+                </div>
+            </div>
+            <div class="footer">
+                <button class="primary" onclick="applyActiveTpl()">활성화 적용</button>
+            </div>
+        </div>
+    </dialog>
+
+    <script>
+        // --- Mock 데이터 -------------------------------------------------
+        const sample = [
+            { id: "a2m_innopolis", company: "에이엠이노폴리스(주)", policyNo: "2025-0022-2722", period: ["2025-02-05", "2026-02-04"], remainDays: 117, amount: 4000, manager: "장*진", phone: "022****9954", email: "leu******@crescty.co.kr", mailSent: "", alimSent: "", status: "대기", memo: "", files: [] },
+            { id: "do_dreamsys", company: "두드림시스템", policyNo: "2025-0026-6550", period: ["2025-10-15", "2026-05-16"], remainDays: 218, amount: null, manager: "김*택", phone: "undefined", email: "kz1***@hanmail.net", mailSent: "", alimSent: "", status: "대기", memo: "", files: [] },
+            { id: "hansunginst", company: "한성계기", policyNo: "2024-0500-3647", period: ["2024-10-16", "2025-10-15"], remainDays: 66, amount: null, manager: "박*욱", phone: "undefined", email: "han*****@naver.com", mailSent: "", alimSent: "", status: "공지 완료", memo: "", files: [] },
+            { id: "frisbee", company: "주식회사 프리스비", policyNo: "2024-0544-5990", period: ["2024-12-05", "2025-12-04"], remainDays: 62, amount: null, manager: "노*규", phone: "051****3450", email: "***@naver.com", mailSent: "", alimSent: "", status: "대기", memo: "", files: [] },
+            { id: "mmk_8_2004", company: "한국아이바이오제닉스_엔지자학", policyNo: "2024-0510-3144", period: ["2024-12-05", "2025-12-04"], remainDays: 141, amount: 300, manager: "김*우", phone: "undefined", email: "kw***@viaqia.com", mailSent: "", alimSent: "", status: "보류", memo: "", files: [] },
+            { id: "livlogi", company: "리브로지", policyNo: "2024-0517-3794", period: ["2024-11-25", "2025-11-26"], remainDays: 45, amount: null, manager: "김*창", phone: "undefined", email: "ri*@gmail.com", mailSent: "", alimSent: "", status: "대기", memo: "", files: [] },
+            { id: "ysml626", company: "와이에스", policyNo: "2024-0533-2690", period: ["2024-10-15", "2025-10-15"], remainDays: 14, amount: null, manager: "임*연", phone: "010****1994", email: "glk***@naver.com", mailSent: "", alimSent: "", status: "대기", memo: "", files: [] }
+        ];
+
+        let TEMPLATES = JSON.parse(localStorage.getItem("bizmsg_templates") || "null") || [
+            {
+                id: "t1", name: "갱신 안내(1차)", type: "메일", subject: "[비즈톡] 서비스 갱신 및 보증보험 안내",
+                body: "안녕하세요. 비즈톡입니다.\n보증보험 만료가 예정되어 갱신 안내드립니다.\n첨부된 약관/갱신신청서 확인 후 회신 부탁드립니다."
+            },
+            {
+                id: "t2", name: "갱신 요청(2차)", type: "메일", subject: "[재안내] 보증보험 갱신 요청",
+                body: "D-30 재안내드립니다. 보증보험 연장 및 약관 동의 서류 회신 부탁드립니다."
+            },
+            { id: "t3", name: "알림톡(요약)", type: "알림톡", subject: "", body: "[비즈톡] 보증보험 D-30. 메일을 확인해 주세요." }
+        ];
+        // 활성 템플릿 (메일/알림톡 각각 1개 가정)
+        let activeTplId = localStorage.getItem("activeTplId") || "t1";
+
+        // --- 상태 / 데이터 핸들링 ----------------------------------------
+        let state = {
+            data: JSON.parse(localStorage.getItem("bizmsg_gx_data") || "null") || sample,
+            page: 1, pageSize: 10, sortKey: null, sortDir: 1,
+            filters: { id: "", company: "", due30: false, due60: false, status: "", sent: "", from: "", to: "" }
+        };
+
+        function maskEmail(e) { if (!e || e === 'undefined') return 'undefined'; const [id, domain] = e.split("@"); if (!domain) return e; return id.slice(0, 2) + "***@" + domain; }
+        function maskPhone(p) { if (!p || p === 'undefined') return 'undefined'; return p.replace(/(\d{3})(\d+)(\d{4})/, (m, a, b, c) => a + "-**" + c); }
+        function maskName(n) { if (!n) return ""; return n[0] + "*" + (n.length > 2 ? "*" : ""); }
+        function formatAmount(a) { if (a == null || a === undefined || a === '') return "undefined"; return Number(a).toLocaleString(); }
+        function formatRemain(d) { const s = d > 0 ? `${d}일 남음` : (d === 0 ? "당일" : "만료"); return s; }
+        function between(dateStr, from, to) {
+            if (!from && !to) return true;
+            const d = new Date(dateStr);
+            if (from && d < new Date(from)) return false;
+            if (to && d > new Date(to)) return false;
+            return true;
+        }
+
+        function persist() { localStorage.setItem("bizmsg_gx_data", JSON.stringify(state.data)); localStorage.setItem("activeTplId", activeTplId); }
+
+        // --- 렌더링 ------------------------------------------------------
+        function render() {
+            const tbody = document.querySelector("#dataGrid tbody");
+            tbody.innerHTML = "";
+            const filters = state.filters;
+            let rows = state.data.filter(r => {
+                if (filters.id && !r.id.toLowerCase().includes(filters.id.toLowerCase())) return false;
+                if (filters.company && !r.company.includes(filters.company)) return false;
+                if (filters.due30 && !(r.remainDays <= 30)) return false;
+                if (filters.due60 && !(r.remainDays <= 60)) return false;
+                if (filters.status && r.status !== filters.status) return false;
+                if (filters.sent === "mail" && !r.mailSent) return false;
+                if (filters.sent === "alim" && !r.alimSent) return false;
+                if (filters.sent === "none" && (r.mailSent || r.alimSent)) return false;
+                // date filter on policy end
+                const end = r.period[1];
+                if (!between(end, filters.from, filters.to)) return false;
+                return true;
+            });
+
+            // sort
+            if (state.sortKey) {
+                rows.sort((a, b) => {
+                    const k = state.sortKey, dir = state.sortDir;
+                    let va = a[k], vb = b[k];
+                    if (k === "period") { va = a.period[1]; vb = b.period[1]; }
+                    if (k === "remain") { va = a.remainDays; vb = b.remainDays; }
+                    if (k === "amount") { va = a.amount ?? 0; vb = b.amount ?? 0; }
+                    if (typeof va === "string") va = va.toLowerCase();
+                    if (typeof vb === "string") vb = vb.toLowerCase();
+                    return (va > vb ? 1 : va < vb ? -1 : 0) * dir;
+                });
+            }
+
+            const total = rows.length;
+            document.getElementById("resultInfo").textContent = `총 ${total}건`;
+
+            // pagination
+            const start = (state.page - 1) * state.pageSize;
+            rows.slice(start, start + state.pageSize).forEach((r, idx) => {
+                const tr = document.createElement("tr");
+                if (r.remainDays === 45 || r.remainDays === 30 || r.remainDays <= 30) tr.classList.add("highlight");
+                tr.innerHTML = `
+      <td><input type="checkbox" class="rowcheck" data-id="${r.id}"></td>
+      <td><a href="#" class="lnkDetail" data-id="${r.id}">${r.id}</a></td>
+      <td>${r.company}</td>
+      <td>${r.policyNo || ""}</td>
+      <td>${r.period[0]} ~ ${r.period[1]}</td>
+      <td>${formatRemain(r.remainDays)}</td>
+      <td>${formatAmount(r.amount)}</td>
+      <td>${maskName(r.manager)}</td>
+      <td>${maskPhone(r.phone)}</td>
+      <td>${maskEmail(r.email)}</td>
+      <td>${r.mailSent || ""}</td>
+      <td>${r.alimSent || ""}</td>
+      <td>
+        <select class="selStatus" data-id="${r.id}">
+          ${["대기", "공지 완료", "갱신 완료", "보류"].map(s => `<option ${s === r.status ? "selected" : ""}>${s}</option>`).join("")}
+        </select>
+      </td>
+      <td>
+        <div class="row-actions">
+          <button data-id="${r.id}" class="btnMemo">메모</button>
+          <button data-id="${r.id}" class="btnUpload">서류 업로드</button>
+          <button data-id="${r.id}" class="btnMail">메일</button>
+          <button data-id="${r.id}" class="btnAlim">알림톡</button>
+        </div>
+      </td>
+    `;
+                tbody.appendChild(tr);
+            });
+
+            renderPager(total);
+            bindRowEvents();
+            document.getElementById("activeTplName").textContent = TEMPLATES.find(t => t.id === activeTplId)?.name || "";
+        }
+
+        function renderPager(total) {
+            const pager = document.getElementById("pager");
+            const pages = Math.max(1, Math.ceil(total / state.pageSize));
+            const cur = Math.min(state.page, pages);
+            state.page = cur;
+            let html = "";
+            html += `<span class="muted">페이지 ${cur}/${pages}</span>`;
+            html += `<button ${cur === 1 ? "disabled" : ""} data-p="prev">이전</button>`;
+            for (let i = 1; i <= pages && i <= 7; i++) {
+                html += `<button data-p="${i}" ${i === cur ? 'class="primary"' : ""}>${i}</button>`;
+            }
+            html += `<button ${cur === pages ? "disabled" : ""} data-p="next">다음</button>`;
+            pager.innerHTML = html;
+            pager.querySelectorAll("button").forEach(b => {
+                b.onclick = () => {
+                    const p = b.getAttribute("data-p");
+                    if (p === "prev") state.page = Math.max(1, state.page - 1);
+                    else if (p === "next") state.page += 1;
+                    else state.page = parseInt(p);
+                    render();
+                };
+            });
+        }
+
+        function bindRowEvents() {
+            document.querySelectorAll(".lnkDetail").forEach(a => a.onclick = (e) => { e.preventDefault(); openDetail(a.dataset.id) });
+            document.querySelectorAll(".btnMemo").forEach(btn => btn.onclick = () => openMemo(btn.dataset.id));
+            document.querySelectorAll(".btnUpload").forEach(btn => btn.onclick = () => openUpload(btn.dataset.id));
+            document.querySelectorAll(".btnMail").forEach(btn => btn.onclick = () => openSend(btn.dataset.id, "mail"));
+            document.querySelectorAll(".btnAlim").forEach(btn => btn.onclick = () => openSend(btn.dataset.id, "alim"));
+            document.querySelectorAll(".selStatus").forEach(sel => sel.onchange = () => {
+                const r = state.data.find(x => x.id === sel.dataset.id); r.status = sel.value; persist(); render();
+            });
+            document.getElementById("checkAll").onclick = (e) => {
+                document.querySelectorAll(".rowcheck").forEach(c => c.checked = e.target.checked);
+            }
+        }
+
+        // --- 상세 보기 ---------------------------------------------------
+        let currentId = null;
+        function openDetail(id) {
+            currentId = id;
+            const r = state.data.find(x => x.id === id);
+            const b = document.getElementById("tab-basic");
+            const i = document.getElementById("tab-ins");
+            const l = document.getElementById("tab-logs");
+            const reply = document.getElementById("tab-reply");
+            b.innerHTML = `
+    <div class="form-row"><div class="label">고객 아이디</div><div>${r.id}</div></div>
+    <div class="form-row"><div class="label">회사명</div><div>${r.company}</div></div>
+    <div class="form-row"><div class="label">담당자</div><div>${maskName(r.manager)} / ${maskPhone(r.phone)} / ${maskEmail(r.email)}</div></div>
+    <div class="form-row"><div class="label">상태</div><div>${r.status}</div></div>
+  `;
+            i.innerHTML = `
+    <div class="form-row"><div class="label">증권번호</div><div>${r.policyNo || ""}</div></div>
+    <div class="form-row"><div class="label">기간</div><div>${r.period[0]} ~ ${r.period[1]}</div></div>
+    <div class="form-row"><div class="label">남은 기간</div><div>${formatRemain(r.remainDays)}</div></div>
+    <div class="form-row"><div class="label">금액</div><div>${formatAmount(r.amount)}</div></div>
+  `;
+            l.innerHTML = `
+    <table class="table-mini">
+      <thead><tr><th>구분</th><th>일시</th><th>내용</th></tr></thead>
+      <tbody>
+        ${r.mailSent ? `<tr><td>메일</td><td>${r.mailSent}</td><td>${TEMPLATES.find(t => t.id === activeTplId)?.name}</td></tr>` : ""}
+        ${r.alimSent ? `<tr><td>알림톡</td><td>${r.alimSent}</td><td>${TEMPLATES.find(t => t.type === '알림톡')?.name || ''}</td></tr>` : ""}
+      </tbody>
+    </table>
+  `;
+            reply.innerHTML = `
+    <div class="form-row"><div class="label">메모</div><div>${r.memo || "-"}</div></div>
+    <div class="form-row"><div class="label">첨부</div><div>${(r.files || []).map(f => `<span class="badge">${f}</span>`).join(" ") || "-"}</div></div>
+  `;
+
+            // tab behavior
+            const tabs = document.querySelectorAll("#dlgDetail .tabs button");
+            tabs.forEach(btn => btn.onclick = () => {
+                tabs.forEach(x => x.classList.remove("active"));
+                btn.classList.add("active");
+                document.querySelectorAll("#dlgDetail .tab-panel").forEach(p => p.hidden = true);
+                document.getElementById("tab-" + btn.dataset.tab).hidden = false;
+            });
+            document.getElementById("btnDetailMail").onclick = () => openSend(id, "mail");
+            document.getElementById("btnDetailAlim").onclick = () => openSend(id, "alim");
+            dlgDetail.showModal();
+        }
+        function closeDetail() { dlgDetail.close(); }
+
+        // --- 메모 ---------------------------------------------------------
+        let memoId = null;
+        function openMemo(id) {
+            memoId = id;
+            document.getElementById("memoTarget").textContent = id;
+            const r = state.data.find(x => x.id === id);
+            document.getElementById("memoText").value = r.memo || "";
+            dlgMemo.showModal();
+        }
+        function saveMemo() {
+            const r = state.data.find(x => x.id === memoId);
+            r.memo = document.getElementById("memoText").value;
+            persist(); dlgMemo.close(); render();
+        }
+
+        // --- 파일 업로드 --------------------------------------------------
+        let uploadId = null;
+        function openUpload(id) {
+            uploadId = id;
+            document.getElementById("uploadTarget").textContent = id;
+            document.getElementById("fileInput").value = "";
+            const r = state.data.find(x => x.id === id);
+            document.getElementById("uploadedList").innerHTML = (r.files || []).map(f => `<span class="badge">${f}</span>`).join(" ");
+            dlgUpload.showModal();
+        }
+        function saveUpload() {
+            const inp = document.getElementById("fileInput");
+            if (!inp.files.length) { alert("파일을 선택하세요."); return; }
+            const name = inp.files[0].name;
+            const r = state.data.find(x => x.id === uploadId);
+            if (!r.files) r.files = [];
+            r.files.push(name);
+            persist(); dlgUpload.close(); render();
+        }
+
+        // --- 발송 ---------------------------------------------------------
+        let sendType = "mail", sendId = null;
+        function openSend(id, type) {
+            sendType = type; sendId = id;
+            const sel = document.getElementById("sendTpl");
+            const list = TEMPLATES.filter(t => type === "mail" ? t.type === "메일" : t.type === "알림톡");
+            sel.innerHTML = list.map(t => `<option value="${t.id}" ${t.id === activeTplId ? "selected" : ""}>${t.name}</option>`).join("");
+            updatePreview();
+            document.getElementById("sendTitle").textContent = type === "mail" ? "메일 발송" : "알림톡 발송";
+            document.getElementById("btnDoSend").onclick = doSend;
+            dlgSend.showModal();
+        }
+        function updatePreview() {
+            const id = document.getElementById("sendTpl").value;
+            const t = TEMPLATES.find(x => x.id === id);
+            document.getElementById("tplPreview").textContent = (t.subject ? (t.subject + "\n\n") : "") + t.body;
+        }
+        document.getElementById("sendTpl").addEventListener("change", updatePreview);
+
+        function doSend() {
+            const r = state.data.find(x => x.id === sendId);
+            const now = new Date().toISOString().slice(0, 16).replace("T", " ");
+            if (sendType === "mail") r.mailSent = now; else r.alimSent = now;
+            // 자동 상태 업데이트 (공지 완료)
+            if (r.status === "대기") r.status = "공지 완료";
+            persist(); dlgSend.close(); render();
+        }
+
+        // --- 템플릿 관리 --------------------------------------------------
+        function saveTplStore() {
+            localStorage.setItem("bizmsg_templates", JSON.stringify(TEMPLATES));
+            localStorage.setItem("activeTplId", activeTplId);
+            const active = TEMPLATES.find(t => t.id === activeTplId);
+            if (active) document.getElementById("activeTplName").textContent = active.name;
+        }
+
+        let currentTplId = null;
+
+        function openTpl() {
+            renderTplTable();
+            loadTplForm(null); // 신규 작성 상태로 폼 초기화
+            dlgTpl.showModal();
+        }
+
+        function renderTplTable() {
+            const tb = document.querySelector("#tplTable tbody");
+            tb.innerHTML = "";
+            TEMPLATES.forEach(t => {
+                tb.innerHTML += `
+      <tr data-id="${t.id}" class="tpl-row">
+        <td style="text-align:center"><input type="radio" name="activeTpl" value="${t.id}" ${t.id === activeTplId ? "checked" : ""}></td>
+        <td>${t.name}</td>
+        <td>${t.type}</td>
+        <td>${t.subject || "-"}</td>
+      </tr>`;
+            });
+            // 행 클릭 시 폼에 로드
+            document.querySelectorAll(".tpl-row").forEach(tr => {
+                tr.onclick = () => loadTplForm(tr.getAttribute("data-id"));
+            });
+        }
+
+        function createTplId() { return `t${Date.now()}`; }
+
+        function loadTplForm(id) {
+            currentTplId = id;
+            const t = TEMPLATES.find(x => x.id === id) || { id: createTplId(), name: "", type: "메일", subject: "", body: "", tplCode: "" };
+            document.getElementById("tplId").value = t.id;
+            document.getElementById("tplName").value = t.name;
+            document.querySelectorAll('input[name="tplType"]').forEach(r => r.checked = (r.value === t.type));
+            document.getElementById("tplSubject").value = t.subject || "";
+            document.getElementById("tplBody").value = t.body || "";
+            document.getElementById("tplCode").value = t.tplCode || "";
+            const isAlim = t.type === "알림톡";
+            document.getElementById("tplKakaoChannelRow").hidden = !isAlim;
+            document.getElementById("tplCodeRow").hidden = !isAlim;
+            document.getElementById("tplAlimPreviewRow").hidden = !isAlim;
+            if (isAlim) {
+                document.getElementById("tplAlimPreview").textContent = t.body || "(등록된 템플릿 본문이 없습니다.)";
+            }
+        }
+
+        // 버튼: 신규/복제/삭제/취소/저장
+        document.getElementById("tplNew").onclick = () => loadTplForm(null);
+
+        document.getElementById("tplClone").onclick = () => {
+            if (!currentTplId) { alert("복제할 템플릿을 선택하세요."); return; }
+            const src = TEMPLATES.find(t => t.id === currentTplId);
+            const clone = { ...src, id: createTplId(), name: src.name + " 사본" };
+            TEMPLATES.push(clone);
+            saveTplStore(); renderTplTable(); loadTplForm(clone.id);
+        };
+
+        document.getElementById("tplDelete").onclick = () => {
+            const id = document.getElementById("tplId").value;
+            const idx = TEMPLATES.findIndex(t => t.id === id);
+            if (idx < 0) { alert("삭제할 템플릿을 선택하세요."); return; }
+            if (TEMPLATES[idx].id === activeTplId) { alert("활성 템플릿은 삭제할 수 없습니다."); return; }
+            TEMPLATES.splice(idx, 1);
+            saveTplStore(); renderTplTable(); loadTplForm(null);
+        };
+
+        document.getElementById("tplCancel").onclick = () => loadTplForm(null);
+
+        document.getElementById("tplSave").onclick = () => {
+            const id = document.getElementById("tplId").value || createTplId();
+            const name = document.getElementById("tplName").value.trim();
+            const type = [...document.querySelectorAll('input[name="tplType"]')].find(r => r.checked)?.value || "메일";
+            const subject = document.getElementById("tplSubject").value;
+            const body = document.getElementById("tplBody").value;
+            const tplCode = document.getElementById("tplCode").value.trim();
+            if (!name) { alert("이름은 필수입니다."); return; }
+            if (type === "알림톡" && !tplCode) { alert("알림톡 템플릿 코드를 입력하세요."); return; }
+            const i = TEMPLATES.findIndex(t => t.id === id);
+            const newTpl = { id, name, type, subject, body, tplCode };
+            if (i >= 0) TEMPLATES[i] = { ...TEMPLATES[i], ...newTpl }; else TEMPLATES.push(newTpl);
+            saveTplStore();
+            renderTplTable();
+            loadTplForm(id);
+        };
+
+        function applyActiveTpl() {
+            const sel = document.querySelector('input[name="activeTpl"]:checked');
+            if (!sel) { alert("활성 템플릿을 선택하세요."); return; }
+            activeTplId = sel.value;
+            saveTplStore();
+            dlgTpl.close();
+        }
+
+        // --- 검색/정렬/엑셀(Mock) ----------------------------------------
+        function collectFilters() {
+            state.filters.id = document.getElementById("qId").value.trim();
+            state.filters.company = document.getElementById("qCompany").value.trim();
+            state.filters.due30 = document.getElementById("qDue30").checked;
+            state.filters.due60 = document.getElementById("qDue60").checked;
+            state.filters.status = document.getElementById("qStatus").value;
+            state.filters.sent = document.getElementById("qSent").value;
+            state.filters.from = document.getElementById("qFrom").value;
+            state.filters.to = document.getElementById("qTo").value;
+        }
+        document.getElementById("btnSearch").onclick = () => { collectFilters(); state.page = 1; render(); };
+        document.getElementById("btnReset").onclick = () => {
+            ["qId", "qCompany", "qFrom", "qTo"].forEach(id => document.getElementById(id).value = "");
+            ["qDue30", "qDue60"].forEach(id => document.getElementById(id).checked = false);
+            document.getElementById("qStatus").value = "";
+            document.getElementById("qSent").value = "";
+            collectFilters(); state.page = 1; render();
+        };
+
+        document.querySelectorAll("#dataGrid thead th.sort").forEach(th => {
+            th.onclick = () => {
+                const k = th.dataset.key;
+                if (state.sortKey === k) state.sortDir *= -1; else { state.sortKey = k; state.sortDir = 1; }
+                render();
+            };
+        });
+
+        // Bulk send
+        function getCheckedIds() {
+            return [...document.querySelectorAll(".rowcheck:checked")].map(c => c.dataset.id);
+        }
+        document.getElementById("btnBulkMail").onclick = () => {
+            const ids = getCheckedIds(); if (ids.length === 0) return alert("선택된 행이 없습니다.");
+            ids.forEach(id => { const r = state.data.find(x => x.id === id); r.mailSent = new Date().toISOString().slice(0, 16).replace("T", " "); if (r.status === "대기") r.status = "공지 완료"; });
+            persist(); render();
+        };
+        document.getElementById("btnBulkAlim").onclick = () => {
+            const ids = getCheckedIds(); if (ids.length === 0) return alert("선택된 행이 없습니다.");
+            ids.forEach(id => { const r = state.data.find(x => x.id === id); r.alimSent = new Date().toISOString().slice(0, 16).replace("T", " "); if (r.status === "대기") r.status = "공지 완료"; });
+            persist(); render();
+        };
+
+        // Export CSV Mock
+        document.getElementById("btnExport").onclick = () => {
+            const header = ["id", "company", "policyNo", "periodStart", "periodEnd", "remainDays", "amount", "manager", "phone", "email", "mailSent", "alimSent", "status"];
+            const rows = state.data.map(r => [r.id, r.company, r.policyNo, r.period[0], r.period[1], r.remainDays, r.amount ?? "", r.manager, r.phone, r.email, r.mailSent, r.alimSent, r.status].join(","));
+            const blob = new Blob([header.join(",") + "\n" + rows.join("\n")], { type: "text/csv" });
+            const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "renewal_export_mock.csv"; a.click();
+        };
+
+        // open dialogs
+        document.getElementById("btnTpl").onclick = openTpl;
+
+        // Init
+        render();
+    </script>
+</body>
+
+</html>
