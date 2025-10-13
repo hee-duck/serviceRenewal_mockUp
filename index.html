@@ -263,10 +263,12 @@
     <div class="tabs">
         <button class="tab-btn active" data-tab="monitor">① 금액 모니터링 (실시간)</button>
         <button class="tab-btn" data-tab="renewal">② 보증보험 관리 (비실시간)</button>
+        <button class="tab-btn" data-tab="template">③ 템플릿 관리 (공용)</button>
     </div>
 
     <!-- 금액 모니터링 탭 -->
     <section class="card tab-content" id="tab-monitor">
+        <!-- 검색 툴바 -->
         <div class="toolbar">
             <input id="filterId" type="text" placeholder="고객 아이디">
             <input id="filterCompany" type="text" placeholder="회사명">
@@ -283,6 +285,7 @@
                 <option>증액 요청 중</option>
                 <option>조치 완료</option>
             </select>
+            <button id="btnSelectTplMonitor">활성 템플릿 선택</button>
             <button class="primary" id="btnSearch">검색</button>
             <button id="btnReset">초기화</button>
         </div>
@@ -342,6 +345,7 @@
                 <option>갱신 완료</option>
                 <option>보류</option>
             </select>
+            <button id="btnSelectTplMonitor">활성 템플릿 선택</button>
             <button class="primary" id="btnSearch">검색</button>
             <button id="btnReset">초기화</button>
         </div>
@@ -370,88 +374,109 @@
         </table>
     </section>
 
-    <!-- 상세 모달 -->
-    <dialog id="dlgDetail">
+    <!-- 템플릿 관리 탭 -->
+    <section class="card tab-content hidden" id="tab-template">
+        <h3>템플릿 관리</h3>
+        <table class="grid" id="templateTable">
+            <thead>
+                <tr>
+                    <th>구분</th>
+                    <th>템플릿명</th>
+                    <th>유형</th>
+                    <th>활성화</th>
+                    <th>미리보기</th>
+                    <th>수정</th>
+                </tr>
+            </thead>
+            <tbody id="templateBody"></tbody>
+        </table>
+        <button id="btnAddTpl" class="primary">템플릿 추가</button>
+    </section>
+
+    <!-- 활성 템플릿 선택 모달 -->
+    <dialog id="dlgSelectTpl">
         <div class="modal">
             <header>
-                <h3>상세 보기</h3>
-                <button onclick="dlgDetail.close()">닫기</button>
+                <h3>활성화된 템플릿 선택</h3>
+                <button onclick="dlgSelectTpl.close()">닫기</button>
             </header>
             <div class="body">
-                <div class="tab-buttons">
-                    <button class="active" data-tab="basic">기본정보</button>
-                    <button data-tab="ins">보증보험정보</button>
-                    <button data-tab="logs">발송이력</button>
-                    <button data-tab="reply">고객응답</button>
+                <table class="grid">
+                    <thead>
+                        <tr>
+                            <th>구분</th>
+                            <th>템플릿명</th>
+                            <th>유형</th>
+                            <th>선택</th>
+                        </tr>
+                    </thead>
+                    <tbody id="selectTplBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- 🧩 템플릿 상세 모달 -->
+    <dialog id="dlgTemplateDetail">
+        <div class="modal">
+            <header>
+                <h3>템플릿 등록 / 수정</h3>
+                <button onclick="dlgTemplateDetail.close()">닫기</button>
+            </header>
+            <div class="body">
+                <div class="form-row">
+                    <div class="label">구분</div>
+                    <select id="tplCategory">
+                        <option value="monitor_1st">금액 모니터링 - 1차</option>
+                        <option value="monitor_2nd">금액 모니터링 - 2차</option>
+                        <option value="renewal_1st">보증보험 관리 - 1차</option>
+                        <option value="renewal_2nd">보증보험 관리 - 2차</option>
+                    </select>
                 </div>
 
-                <div class="tab-body" id="tab-basic">
-                    <div class="form-row">
-                        <div class="label">고객 아이디</div>
-                        <div>frisbee</div>
-                    </div>
-                    <div class="form-row">
-                        <div class="label">회사명</div>
-                        <div>프리스비</div>
-                    </div>
-                    <div class="form-row">
-                        <div class="label">요금관리자</div>
-                        <div>노○규 / 051-****-3450 / ***@naver.com</div>
-                    </div>
-                    <div class="form-row">
-                        <div class="label">처리현황</div>
-                        <div>공지 완료</div>
-                    </div>
+                <div class="form-row">
+                    <div class="label">유형</div>
+                    <select id="tplType">
+                        <option value="mail">메일</option>
+                        <option value="alim">알림톡</option>
+                    </select>
                 </div>
 
-                <div class="tab-body hidden" id="tab-ins">
-                    <div class="form-row">
-                        <div class="label">증권번호</div>
-                        <div>2024-0544-5990</div>
-                    </div>
-                    <div class="form-row">
-                        <div class="label">보증보험 기간</div>
-                        <div>2024.12.05 ~ 2025.12.04</div>
-                    </div>
-                    <div class="form-row">
-                        <div class="label">보증보험 금액</div>
-                        <div>3,000,000</div>
-                    </div>
-                    <div class="form-row">
-                        <div class="label">남은 기간</div>
-                        <div>D-30</div>
-                    </div>
+                <div class="form-row">
+                    <div class="label">템플릿명</div>
+                    <input id="tplName" type="text" placeholder="템플릿명을 입력하세요">
                 </div>
 
-                <div class="tab-body hidden" id="tab-logs">
+                <div id="tplMailFields">
                     <div class="form-row">
-                        <div class="label">1차 발송</div>
-                        <div>메일: 2025-10-12 09:00 / 알림톡: 2025-10-12 09:01</div>
+                        <div class="label">메일 제목</div>
+                        <input id="tplMailTitle" type="text" placeholder="메일 제목">
                     </div>
                     <div class="form-row">
-                        <div class="label">2차 발송</div>
-                        <div>메일: - / 알림톡: -</div>
-                    </div>
-                    <div class="form-row">
-                        <div class="label">템플릿명</div>
-                        <div>갱신 안내(1차)</div>
+                        <div class="label">메일 본문</div>
+                        <textarea id="tplMailBody" rows="5" placeholder="메일 본문"></textarea>
                     </div>
                 </div>
 
-                <div class="tab-body hidden" id="tab-reply">
+                <div id="tplAlimFields" class="hidden">
                     <div class="form-row">
-                        <div class="label">고객 서류</div>
-                        <div>보증보험증권_2025.pdf</div>
+                        <div class="label">알림톡 코드</div>
+                        <input id="tplAlimCode" type="text" placeholder="카카오 알림톡 템플릿 코드">
                     </div>
                     <div class="form-row">
-                        <div class="label">메모</div>
-                        <div><textarea>서류 수신 완료. 갱신 서류 확인 중.</textarea></div>
+                        <div class="label">설명</div>
+                        <textarea id="tplAlimDesc" rows="3" placeholder="알림톡 설명"></textarea>
                     </div>
+                </div>
+
+                <div class="form-row">
+                    <label><input type="checkbox" id="tplActive"> 활성화</label>
                 </div>
             </div>
 
             <div class="footer">
-                <button class="primary" onclick="dlgDetail.close()">확인</button>
+                <button class="save-btn" id="btnTplSave">저장</button>
+                <button onclick="dlgTemplateDetail.close()">닫기</button>
             </div>
         </div>
     </dialog>
@@ -469,25 +494,6 @@
             btn.addEventListener("click", () => {
                 tabs.forEach(b => b.classList.remove("active"));
                 contents.forEach(c => c.classList.add("hidden"));
-                btn.classList.add("active");
-                document.getElementById("tab-" + btn.dataset.tab).classList.remove("hidden");
-            });
-        });
-
-        // 상세 모달 열기
-        document.querySelectorAll(".lnkDetail").forEach(link => {
-            link.addEventListener("click", e => {
-                e.preventDefault();
-                dlgDetail.showModal();
-            });
-        });
-
-        // 모달 내부 탭 전환
-        const modalTabs = document.querySelectorAll(".tab-buttons button");
-        modalTabs.forEach(btn => {
-            btn.addEventListener("click", () => {
-                modalTabs.forEach(b => b.classList.remove("active"));
-                document.querySelectorAll(".tab-body").forEach(b => b.classList.add("hidden"));
                 btn.classList.add("active");
                 document.getElementById("tab-" + btn.dataset.tab).classList.remove("hidden");
             });
@@ -575,9 +581,9 @@ WHERE company_id='${id}';`);
 
         // ⬇️ 당월 청구액 정렬 기능 추가
         document.querySelector("#monitorTable thead th:nth-child(4)")?.addEventListener("click", () => {
-        monitorSortAsc = !monitorSortAsc;
-        const sorted = [...rows].sort((a, b) => monitorSortAsc ? a.billing - b.billing : b.billing - a.billing);
-        renderMonitor(sorted);
+            monitorSortAsc = !monitorSortAsc;
+            const sorted = [...rows].sort((a, b) => monitorSortAsc ? a.billing - b.billing : b.billing - a.billing);
+            renderMonitor(sorted);
         });
 
         /* -----------------------------
@@ -687,10 +693,53 @@ WHERE company_id='${id}';`);
 
         // ⬇️ 직전 3개월 청구액 정렬 기능
         document.querySelector("#renewalTable thead th:nth-child(7)")?.addEventListener("click", () => {
-        renewalSortAsc = !renewalSortAsc;
-        const sorted = [...data].sort((a, b) => renewalSortAsc ? a.billing - b.billing : b.billing - a.billing);
-        renderRenewal(sorted);
+            renewalSortAsc = !renewalSortAsc;
+            const sorted = [...data].sort((a, b) => renewalSortAsc ? a.billing - b.billing : b.billing - a.billing);
+            renderRenewal(sorted);
         });
+
+        /* -----------------------------
+ 🧩 활성 템플릿 선택 기능 (공용 탭 연동)
+----------------------------- */
+
+        // 템플릿 저장소 구조 (템플릿 관리 탭에서 생성됨)
+        let templateList = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
+
+        // 모달 렌더링
+        function openSelectTemplate(tabName) {
+            const body = document.getElementById("selectTplBody");
+            dlgSelectTpl.showModal();
+
+            // 각 탭별 prefix로 필터링
+            const prefix = tabName === "monitor" ? "monitor_" : "renewal_";
+            const activeList = templateList.filter(t => t.is_active && t.category.startsWith(prefix));
+
+            if (activeList.length === 0) {
+                body.innerHTML = `<tr><td colspan="4">활성화된 템플릿이 없습니다.</td></tr>`;
+                return;
+            }
+
+            body.innerHTML = activeList.map(tpl => `
+    <tr>
+      <td>${tpl.category}</td>
+      <td>${tpl.name}</td>
+      <td>${tpl.type}</td>
+      <td><button onclick="applyTemplate('${tabName}','${tpl.name}')">선택</button></td>
+    </tr>
+  `).join("");
+        }
+
+        // 선택 적용
+        function applyTemplate(tabName, tplName) {
+            alert(`${tabName === "monitor" ? "금액 모니터링" : "보증보험 관리"} 탭에 '${tplName}' 템플릿이 적용되었습니다.`);
+            dlgSelectTpl.close();
+        }
+
+        // 각 탭 버튼 클릭 이벤트
+        document.getElementById("btnSelectTplMonitor").addEventListener("click", () => openSelectTemplate("monitor"));
+        document.getElementById("btnSelectTplRenewal").addEventListener("click", () => openSelectTemplate("renewal"));
+
+
     </script>
 
 </body>
