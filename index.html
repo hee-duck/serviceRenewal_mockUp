@@ -356,7 +356,7 @@
                     <th>보증보험 기간</th>
                     <th>보증보험 만료일</th>
                     <th>보증보험 금액</th>
-                    <th>직전 3개월 청구액▲▼</th>
+                    <th>직전 3개월 청구액</th>
                     <th>1차 안내(메일)</th>
                     <th>1차 안내(알림톡)</th>
                     <th>2차 안내(메일)</th>
@@ -583,6 +583,16 @@ WHERE company_id='${id}';`);
         /* -----------------------------
          🟨 (2) 보증보험 관리 탭 로직
         ----------------------------- */
+
+        // 🔹 직전 3개월 계산용 월 범위 라벨 (예: 10월 → 7,8,9월)
+        const now = new Date();
+        const curMonth = now.getMonth() + 1; // JS는 0~11 반환
+        const months = [curMonth - 3, curMonth - 2, curMonth - 1].map(m => (m <= 0 ? m + 12 : m));
+        const monthLabel = months.map(m => `${m}월`).join(", ");
+
+        // 🔹 테이블 헤더 업데이트
+        document.querySelector("#renewalTable thead th:nth-child(7)").innerText = `▲▼ 직전 3개월 청구액 (${monthLabel})`;
+
         const data = [
             {
                 id: "frisbee", company: "프리스비", policy: "2024-0544-5990", term: "2024.12.05 ~ 2025.12.04", expire: "2025-12-04", amount: 3000000, billing: 5120000,
