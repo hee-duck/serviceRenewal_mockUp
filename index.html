@@ -293,7 +293,7 @@
                     <th>고객 아이디</th>
                     <th>회사명</th>
                     <th>보증보험 금액</th>
-                    <th>당월 청구액</th>
+                    <th>당월 청구액▲▼</th>
                     <th>초과율(%)</th>
                     <th>상태</th>
                     <th>고객 알림일시</th>
@@ -309,22 +309,44 @@
 
     <!-- 보증보험 관리 탭 -->
     <section class="card tab-content hidden" id="tab-renewal">
+        <!-- 검색 툴바 -->
         <div class="toolbar">
-            <input type="text" placeholder="고객 아이디 검색">
-            <input type="text" placeholder="회사명 검색">
-            <label><input type="checkbox"> 만료일 30일 이하</label>
-            <label><input type="checkbox"> 만료일 60일 이하</label>
-            <select>
-                <option>처리현황(전체)</option>
+            <input type="text" id="filterId" placeholder="고객 아이디">
+            <input type="text" id="filterCompany" placeholder="회사명">
+            <input type="number" id="filterDays" placeholder="만료일 N일 전" min="1" style="width:130px;">
+            <select id="filterMail1">
+                <option value="">1차 메일(전체)</option>
+                <option value="Y">발송 완료</option>
+                <option value="N">미발송</option>
+            </select>
+            <select id="filterAlim1">
+                <option value="">1차 알림톡(전체)</option>
+                <option value="Y">발송 완료</option>
+                <option value="N">미발송</option>
+            </select>
+            <select id="filterMail2">
+                <option value="">2차 메일(전체)</option>
+                <option value="Y">발송 완료</option>
+                <option value="N">미발송</option>
+            </select>
+            <select id="filterAlim2">
+                <option value="">2차 알림톡(전체)</option>
+                <option value="Y">발송 완료</option>
+                <option value="N">미발송</option>
+            </select>
+            <select id="filterStatus">
+                <option value="">처리현황(전체)</option>
                 <option>대기</option>
-                <option>공지 완료</option>
+                <option>1차 완료</option>
+                <option>2차 완료</option>
                 <option>갱신 완료</option>
                 <option>보류</option>
             </select>
-            <button class="primary">검색</button>
-            <button>초기화</button>
+            <button class="primary" id="btnSearch">검색</button>
+            <button id="btnReset">초기화</button>
         </div>
 
+        <!-- 목록 -->
         <table class="grid" id="renewalTable">
             <thead>
                 <tr>
@@ -334,32 +356,17 @@
                     <th>보증보험 기간</th>
                     <th>보증보험 만료일</th>
                     <th>보증보험 금액</th>
-                    <th>직전 3개월 청구액</th>
-                    <th>요금관리자</th>
-                    <th>연락처</th>
-                    <th>이메일</th>
-                    <th>메일 발송일</th>
-                    <th>알림톡 발송일</th>
+                    <th>직전 3개월 청구액▲▼</th>
+                    <th>1차 안내(메일)</th>
+                    <th>1차 안내(알림톡)</th>
+                    <th>2차 안내(메일)</th>
+                    <th>2차 안내(알림톡)</th>
                     <th>처리현황</th>
+                    <th>메모</th>
+                    <th>저장</th>
                 </tr>
             </thead>
-            <tbody>
-                <tr class="highlight" data-id="frisbee">
-                    <td><a href="#" class="lnkDetail">frisbee</a></td>
-                    <td>프리스비</td>
-                    <td>2024-0544-5990</td>
-                    <td>2024.12.05 ~ 2025.12.04</td>
-                    <td>D-30</td>
-                    <td>3,000,000</td>
-                    <td>5,120,000</td>
-                    <td>노○규</td>
-                    <td>051-****-3450</td>
-                    <td>***@naver.com</td>
-                    <td>2025-10-12 09:00</td>
-                    <td>2025-10-12 09:01</td>
-                    <td>공지 완료</td>
-                </tr>
-            </tbody>
+            <tbody id="renewalBody"></tbody>
         </table>
     </section>
 
@@ -450,89 +457,12 @@
     </dialog>
 
     <script>
+        let monitorSortAsc = true;   // 금액 모니터링 탭 정렬 방향
+        let renewalSortAsc = true;   // 보증보험 관리 탭 정렬 방향
 
-        // --- Mock Data: 실시간 ---
-        const rows = [
-            { id: "a2m_innopolis", company: "에이엠이노폴리스", amount: 3000000, billing: 2450000, rate: 81.7, status: "warn", alert_c: "2025-10-13 09:15", alert_i: "2025-10-13 09:16", action: "증액 요청 중", memo: "보험 증액 검토 중" },
-            { id: "hansunginst", company: "한성계기", amount: 3000000, billing: 3400000, rate: 113, status: "danger", alert_c: "2025-10-12 10:03", alert_i: "2025-10-12 10:03", action: "조치 완료", memo: "담당자 연락 완료" },
-            { id: "livlogi", company: "리브로지", amount: 3000000, billing: 1800000, rate: 60, status: "ok", alert_c: "-", alert_i: "-", action: "미조치", memo: "" },
-            { id: "biztalk_demo", company: "비즈톡테스트", amount: 2500000, billing: 2100000, rate: 84, status: "warn", alert_c: "2025-10-13 09:10", alert_i: "2025-10-13 09:11", action: "증액 요청 중", memo: "고객 회신 대기" },
-            { id: "sejongit", company: "세종아이티", amount: 5000000, billing: 5800000, rate: 116, status: "danger", alert_c: "2025-10-13 09:30", alert_i: "2025-10-13 09:31", action: "조치 필요", memo: "내부 확인 요청됨" },
-            { id: "blendedlab", company: "블렌디드랩", amount: 2000000, billing: 1400000, rate: 70, status: "ok", alert_c: "-", alert_i: "-", action: "미조치", memo: "" }
-        ];
-
-        const tbody = document.getElementById("monitorBody");
-
-        function render(data) {
-            tbody.innerHTML = "";
-            data.forEach(r => {
-                tbody.innerHTML += `
-          <tr data-id="${r.id}">
-            <td>${r.id}</td>
-            <td>${r.company}</td>
-            <td>${r.amount.toLocaleString()}</td>
-            <td>${r.billing.toLocaleString()}</td>
-            <td>${r.rate}%</td>
-            <td><span class="status ${r.status}">${r.status === "ok" ? "정상" : r.status === "warn" ? "80% 도달" : "초과"}</span></td>
-            <td>${r.alert_c}</td>
-            <td>${r.alert_i}</td>
-            <td>
-              <select class="action-select">
-                <option ${r.action === "미조치" ? "selected" : ""}>미조치</option>
-                <option ${r.action === "증액 요청 중" ? "selected" : ""}>증액 요청 중</option>
-                <option ${r.action === "조치 완료" ? "selected" : ""}>조치 완료</option>
-              </select>
-            </td>
-            <td><textarea class="memo-edit">${r.memo || ""}</textarea></td>
-            <td><button class="save-btn">저장</button></td>
-          </tr>`;
-            });
-
-            bindSave();
-        }
-
-        function bindSave() {
-            document.querySelectorAll(".save-btn").forEach(btn => {
-                btn.onclick = e => {
-                    const row = e.target.closest("tr");
-                    const id = row.dataset.id;
-                    const action = row.querySelector(".action-select").value;
-                    const memo = row.querySelector(".memo-edit").value.trim();
-                    console.log(`UPDATE insurance_monitoring 
-SET action_result='${action}', memo='${memo}', updated_at=NOW() 
-WHERE company_id='${id}';`);
-                    alert(`저장 완료 (고객ID: ${id})`);
-                };
-            });
-        }
-
-        function filterData() {
-            const idVal = document.getElementById("filterId").value.toLowerCase();
-            const companyVal = document.getElementById("filterCompany").value;
-            const rateVal = parseFloat(document.getElementById("filterRate").value);
-            const statusVal = document.getElementById("filterStatus").value;
-            const actionVal = document.getElementById("filterAction").value;
-
-            return rows.filter(r => {
-                if (idVal && !r.id.toLowerCase().includes(idVal)) return false;
-                if (companyVal && !r.company.includes(companyVal)) return false;
-                if (!isNaN(rateVal) && r.rate < rateVal) return false;
-                if (statusVal && r.status !== statusVal) return false;
-                if (actionVal && r.action !== actionVal) return false;
-                return true;
-            });
-        }
-
-        document.getElementById("btnSearch").onclick = () => render(filterData());
-        document.getElementById("btnReset").onclick = () => {
-            ["filterId", "filterCompany", "filterRate"].forEach(id => document.getElementById(id).value = "");
-            ["filterStatus", "filterAction"].forEach(id => document.getElementById(id).value = "");
-            render(rows);
-        };
-
-        render(rows);
-
-        // 탭 전환
+        /* -----------------------------
+         🟦 공통: 탭/모달 전환
+        ----------------------------- */
         const tabs = document.querySelectorAll(".tab-btn");
         const contents = document.querySelectorAll(".tab-content");
         tabs.forEach(btn => {
@@ -561,28 +491,198 @@ WHERE company_id='${id}';`);
                 btn.classList.add("active");
                 document.getElementById("tab-" + btn.dataset.tab).classList.remove("hidden");
             });
-
-
         });
 
-        // 저장 이벤트 (DB 업데이트 시뮬레이션)
-        document.querySelectorAll(".save-btn").forEach(btn => {
-            btn.addEventListener("click", e => {
-                const row = e.target.closest("tr");
-                const id = row.dataset.id;
-                const action = row.querySelector(".action-select").value;
-                const memo = row.querySelector(".memo-edit").value.trim();
+        /* -----------------------------
+         🟩 (1) 금액 모니터링 탭
+        ----------------------------- */
+        const rows = [
+            { id: "a2m_innopolis", company: "에이엠이노폴리스", amount: 3000000, billing: 2450000, rate: 81.7, status: "warn", alert_c: "2025-10-13 09:15", alert_i: "2025-10-13 09:16", action: "증액 요청 중", memo: "보험 증액 검토 중" },
+            { id: "hansunginst", company: "한성계기", amount: 3000000, billing: 3400000, rate: 113, status: "danger", alert_c: "2025-10-12 10:03", alert_i: "2025-10-12 10:03", action: "조치 완료", memo: "담당자 연락 완료" },
+            { id: "livlogi", company: "리브로지", amount: 3000000, billing: 1800000, rate: 60, status: "ok", alert_c: "-", alert_i: "-", action: "미조치", memo: "" },
+            { id: "biztalk_demo", company: "비즈톡테스트", amount: 2500000, billing: 2100000, rate: 84, status: "warn", alert_c: "2025-10-13 09:10", alert_i: "2025-10-13 09:11", action: "증액 요청 중", memo: "고객 회신 대기" },
+            { id: "sejongit", company: "세종아이티", amount: 5000000, billing: 5800000, rate: 116, status: "danger", alert_c: "2025-10-13 09:30", alert_i: "2025-10-13 09:31", action: "조치 필요", memo: "내부 확인 요청됨" },
+            { id: "blendedlab", company: "블렌디드랩", amount: 2000000, billing: 1400000, rate: 70, status: "ok", alert_c: "-", alert_i: "-", action: "미조치", memo: "" }
+        ];
+        const tbody = document.getElementById("monitorBody");
 
-                // DB 업데이트 시 예시 쿼리 로그
-                console.log(`UPDATE insurance_monitoring 
+        function renderMonitor(data) {
+            tbody.innerHTML = "";
+            data.forEach(r => {
+                tbody.innerHTML += `
+      <tr data-id="${r.id}">
+        <td>${r.id}</td>
+        <td>${r.company}</td>
+        <td>${r.amount.toLocaleString()}</td>
+        <td>${r.billing.toLocaleString()}</td>
+        <td>${r.rate}%</td>
+        <td><span class="status ${r.status}">${r.status === "ok" ? "정상" : r.status === "warn" ? "80% 도달" : "초과"}</span></td>
+        <td>${r.alert_c}</td>
+        <td>${r.alert_i}</td>
+        <td>
+          <select class="action-select">
+            <option ${r.action === "미조치" ? "selected" : ""}>미조치</option>
+            <option ${r.action === "증액 요청 중" ? "selected" : ""}>증액 요청 중</option>
+            <option ${r.action === "조치 완료" ? "selected" : ""}>조치 완료</option>
+          </select>
+        </td>
+        <td><textarea class="memo-edit">${r.memo || ""}</textarea></td>
+        <td><button class="save-btn">저장</button></td>
+      </tr>`;
+            });
+            bindSaveMonitor();
+        }
+
+        function bindSaveMonitor() {
+            document.querySelectorAll(".save-btn").forEach(btn => {
+                btn.onclick = e => {
+                    const row = e.target.closest("tr");
+                    const id = row.dataset.id;
+                    const action = row.querySelector(".action-select").value;
+                    const memo = row.querySelector(".memo-edit").value.trim();
+                    console.log(`UPDATE insurance_monitoring 
 SET action_result='${action}', memo='${memo}', updated_at=NOW() 
 WHERE company_id='${id}';`);
-
-                alert(`조치 결과 및 메모가 저장되었습니다.\n(고객ID: ${id})`);
+                    alert(`저장 완료 (고객ID: ${id})`);
+                };
             });
+        }
+
+        function filterMonitor() {
+            const idVal = document.getElementById("filterId").value.toLowerCase();
+            const companyVal = document.getElementById("filterCompany").value;
+            const rateVal = parseFloat(document.getElementById("filterRate").value);
+            const statusVal = document.getElementById("filterStatus").value;
+            const actionVal = document.getElementById("filterAction").value;
+
+            return rows.filter(r => {
+                if (idVal && !r.id.toLowerCase().includes(idVal)) return false;
+                if (companyVal && !r.company.includes(companyVal)) return false;
+                if (!isNaN(rateVal) && r.rate < rateVal) return false;
+                if (statusVal && r.status !== statusVal) return false;
+                if (actionVal && r.action !== actionVal) return false;
+                return true;
+            });
+        }
+
+        document.getElementById("btnSearch").onclick = () => renderMonitor(filterMonitor());
+        document.getElementById("btnReset").onclick = () => {
+            ["filterId", "filterCompany", "filterRate"].forEach(id => document.getElementById(id).value = "");
+            ["filterStatus", "filterAction"].forEach(id => document.getElementById(id).value = "");
+            renderMonitor(rows);
+        };
+        renderMonitor(rows);
+
+        // ⬇️ 당월 청구액 정렬 기능 추가
+        document.querySelector("#monitorTable thead th:nth-child(4)")?.addEventListener("click", () => {
+        monitorSortAsc = !monitorSortAsc;
+        const sorted = [...rows].sort((a, b) => monitorSortAsc ? a.billing - b.billing : b.billing - a.billing);
+        renderMonitor(sorted);
         });
 
+        /* -----------------------------
+         🟨 (2) 보증보험 관리 탭 로직
+        ----------------------------- */
+        const data = [
+            {
+                id: "frisbee", company: "프리스비", policy: "2024-0544-5990", term: "2024.12.05 ~ 2025.12.04", expire: "2025-12-04", amount: 3000000, billing: 5120000,
+                mail1: "2025-10-12 09:00", alim1: "2025-10-12 09:01", mail2: "-", alim2: "-", status: "1차 완료", memo: "서류 대기 중"
+            },
+            {
+                id: "livlogi", company: "리브로지", policy: "2024-0517-3794", term: "2024.11.25 ~ 2025.11.26", expire: "2025-11-26", amount: 3000000, billing: 1520000,
+                mail1: "2025-09-30 09:00", alim1: "2025-09-30 09:01", mail2: "2025-10-10 09:00", alim2: "2025-10-10 09:01", status: "갱신 완료", memo: "확인 완료"
+            },
+            {
+                id: "ysml626", company: "와이에스", policy: "2024-0533-2690", term: "2024.10.15 ~ 2025.10.15", expire: "2025-10-15", amount: 3000000, billing: 2750000,
+                mail1: "-", alim1: "-", mail2: "-", alim2: "-", status: "대기", memo: ""
+            }
+        ];
+
+        function renderRenewal(list) {
+            const body = document.getElementById("renewalBody");
+            if (!body) return; // 1번 탭에서 실행 안되도록 안전장치
+            body.innerHTML = "";
+            list.forEach(r => {
+                body.innerHTML += `
+      <tr data-id="${r.id}">
+        <td>${r.id}</td>
+        <td>${r.company}</td>
+        <td>${r.policy}</td>
+        <td>${r.term}</td>
+        <td>${r.expire}</td>
+        <td>${r.amount.toLocaleString()}</td>
+        <td>${r.billing.toLocaleString()}</td>
+        <td>${r.mail1}</td>
+        <td>${r.alim1}</td>
+        <td>${r.mail2}</td>
+        <td>${r.alim2}</td>
+        <td>
+          <select class="status-select">
+            <option ${r.status === "대기" ? "selected" : ""}>대기</option>
+            <option ${r.status === "1차 완료" ? "selected" : ""}>1차 완료</option>
+            <option ${r.status === "2차 완료" ? "selected" : ""}>2차 완료</option>
+            <option ${r.status === "갱신 완료" ? "selected" : ""}>갱신 완료</option>
+            <option ${r.status === "보류" ? "selected" : ""}>보류</option>
+          </select>
+        </td>
+        <td><textarea class="memo">${r.memo || ""}</textarea></td>
+        <td><button class="save-btn">저장</button></td>
+      </tr>`;
+            });
+            bindSaveRenewal();
+        }
+
+        function bindSaveRenewal() {
+            document.querySelectorAll("#renewalBody .save-btn").forEach(btn => {
+                btn.onclick = e => {
+                    const row = e.target.closest("tr");
+                    const id = row.dataset.id;
+                    const status = row.querySelector(".status-select").value;
+                    const memo = row.querySelector(".memo").value.trim();
+                    console.log(`UPDATE insurance_renewal 
+SET status='${status}', memo='${memo}', updated_at=NOW() 
+WHERE company_id='${id}';`);
+                    alert(`보증보험 관리 저장 완료 (고객ID: ${id})`);
+                };
+            });
+        }
+
+        function filterRenewal() {
+            const id = document.getElementById("filterId")?.value.trim() || "";
+            const company = document.getElementById("filterCompany")?.value.trim() || "";
+            const nDays = parseInt(document.getElementById("filterDays")?.value);
+            const status = document.getElementById("filterStatus")?.value || "";
+            const now = new Date();
+            return data.filter(r => {
+                if (id && !r.id.includes(id)) return false;
+                if (company && !r.company.includes(company)) return false;
+                if (!isNaN(nDays)) {
+                    const d = new Date(r.expire);
+                    const diff = Math.ceil((d - now) / (1000 * 60 * 60 * 24));
+                    if (diff !== nDays) return false;
+                }
+                if (status && r.status !== status) return false;
+                return true;
+            });
+        }
+
+        document.getElementById("btnSearch")?.addEventListener("click", () => renderRenewal(filterRenewal()));
+        document.getElementById("btnReset")?.addEventListener("click", () => {
+            ["filterId", "filterCompany", "filterDays", "filterStatus"].forEach(id => {
+                if (document.getElementById(id)) document.getElementById(id).value = "";
+            });
+            renderRenewal(data);
+        });
+        renderRenewal(data);
+
+        // ⬇️ 직전 3개월 청구액 정렬 기능
+        document.querySelector("#renewalTable thead th:nth-child(7)")?.addEventListener("click", () => {
+        renewalSortAsc = !renewalSortAsc;
+        const sorted = [...data].sort((a, b) => renewalSortAsc ? a.billing - b.billing : b.billing - a.billing);
+        renderRenewal(sorted);
+        });
     </script>
+
 </body>
 
 </html>
