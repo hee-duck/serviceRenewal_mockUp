@@ -561,10 +561,10 @@
                     <div class="label">템플릿 선택</div>
                     <select id="sendTpl"></select>
                 </div>
-                <div class="form-row">
+                <!-- <div class="form-row">
                     <div class="label">미리보기</div>
                     <div id="tplPreview" class="card" style="padding:10px;white-space:pre-wrap"></div>
-                </div>
+                </div> -->
             </div>
             <div class="footer">
                 <button class="primary" id="btnDoSend">발송 실행(Mock)</button>
@@ -633,11 +633,11 @@
                         <div class="label">본문</div>
                         <div><textarea id="tplBody" placeholder="템플릿 본문을 입력하세요."></textarea></div>
                     </div>
-                    <div class="form-row" id="tplAlimPreviewRow" hidden>
+                    <!-- <div class="form-row" id="tplAlimPreviewRow" hidden>
                         <div class="label">템플릿 미리보기</div>
                         <div id="tplAlimPreview" class="card"
                             style="padding:10px;white-space:pre-wrap;background:#fafafa"></div>
-                    </div>
+                    </div> -->
                     <div style="display:flex;justify-content:flex-end;gap:8px">
                         <button id="tplCancel" class="ghost">취소</button>
                         <button id="tplSave" class="primary">저장</button>
@@ -664,8 +664,40 @@
 
         let TEMPLATES = JSON.parse(localStorage.getItem("bizmsg_templates") || "null") || [
             {
-                id: "t1", name: "갱신 안내(1차)", type: "메일", subject: "[비즈톡] 서비스 갱신 및 보증보험 안내",
-                body: "안녕하세요. 비즈톡입니다.\n보증보험 만료가 예정되어 갱신 안내드립니다.\n첨부된 약관/갱신신청서 확인 후 회신 부탁드립니다."
+                id: "t1", name: "갱신 안내(1차)", type: "메일", subject: "[비즈톡] 계약 만기 도래에 따른 서비스 이용약관 개정 안내",
+                body: "안녕하세요, 비즈톡입니다.\n\n" +
+"귀사의 무궁한 발전을 기원합니다.\n\n" +
+"귀사의 비즈메시지 서비스 계약 만기 도래에 따라,\n" +
+"계약 갱신을 위한 필수 제출 서류 및 서비스 개편 사항을 안내드립니다.\n\n" +
+"1. 제출 기한\n" +
+"2025년 10월 22일 (수) 18시까지\n\n" +
+"※ 기한 내 처리 되지 않을 경우 부득이 서비스 제한 조치 될 수 있습니다.\n\n" +
+"2. 필수 제출 서류\n" +
+"번호\t서류명\t비고\n" +
+"1\t비즈메시지 통합 서비스 신청서\t법인 or 사용 인감 날인 必\n" +
+"2\t서비스 이용 약관 및 개인정보 동의서\t법인 or 사용 인감 날인 必 (10p, 13p 날인) / 서류는 비즈톡센터에서 확인 가능합니다.\n" +
+"3\t비즈메시지 통합 서비스 견적서\t'수신란' 회사명 기재 후 인감 날인 必\n" +
+"4\t이행보증보험 확인서\n" +
+"- 가입금액 3,000,000원 / 계약기간 1년 이상\n" +
+"- 추가위험부담 특별약관 조항 포함 必\n" +
+"- 가입금액에 대한 보험료는 고객 부담 / 보험료는 보험사 확인 必\n" +
+"- 보험 갱신 신청은 보험사측으로 직접 진행 必\n" +
+"☎️문의: 서울보증보험 잠실지점 재모대리점 (02-3434-0333)\n\n" +
+"3. 서비스 개편 안내 (2025.01.01~)\n" +
+"구분\t내용\n" +
+"통합 서비스\t기본료 10,000원(부가세 별도)\n" +
+"알림톡+브랜드메시지/문자/RCS/네이버/비즈팅 서비스 일괄 제공\n" +
+"*상세 서류는 비즈톡센터에서 로그인하여 확인 가능합니다.\n" +
+"친구톡\t2025년 12월 31일 이후 종료 예정 → 2025년 1월 1일부터 브랜드메시지로 전환\n" +
+"(2025년까지 기존 단가 적용, 2026년부터 변경)\n" +
+"요금\t- 서비스 약관 동의 시 요금제 자동 추가\n" +
+"- 미사용 시 별도 비용 미청구\n\n" +
+"4. 서류 제출처\n" +
+"서울특별시 강남구 봉은사로 304, 금강빌딩 14층 비즈톡 앞\n" +
+"Tel. 1688-3764\n\n" +
+"※ 모든 서류는 등기우편 또는 방문 제출 부탁드립니다.\n" +
+"※ 보험 갱신은 보험사 직접 신청이 필요합니다.\n" +
+"※ 통합 서비스 API 스펙 필요 시 별도 문의 바랍니다."
             },
             {
                 id: "t2", name: "갱신 요청(2차)", type: "메일", subject: "[재안내] 보증보험 갱신 요청",
@@ -925,9 +957,16 @@ function bindRowEvents() {
         let currentTplId = null;
 
         function openTpl() {
-            renderTplTable();
-            loadTplForm(null); // 신규 작성 상태로 폼 초기화
-            dlgTpl.showModal();
+        renderTplTable();
+
+        // 첫 번째 템플릿이 있으면 자동 선택
+        if (TEMPLATES.length > 0) {
+            loadTplForm(TEMPLATES[0].id);
+        } else {
+            loadTplForm(null); // 템플릿이 없을 때만 신규 작성 상태
+        }
+
+        dlgTpl.showModal();
         }
 
         function renderTplTable() {
@@ -969,11 +1008,17 @@ function bindRowEvents() {
             document.getElementById("tplBody").value = t.body || "";
             document.getElementById("tplCode").value = t.tplCode || "";
 
+            
+            // 텍스트에 따라 자동 높이 조절
+            const ta = document.getElementById("tplBody");
+            ta.style.height = "auto";
+            ta.style.height = (ta.scrollHeight + 10) + "px";
+
             // 초기 표시 상태
             const isAlim = t.type === "알림톡";
             document.getElementById("tplKakaoChannelRow").hidden = !isAlim;
             document.getElementById("tplCodeRow").hidden = !isAlim;
-            document.getElementById("tplAlimPreviewRow").hidden = !isAlim;
+            // document.getElementById("tplAlimPreviewRow").hidden = !isAlim;
 
             // 필드 활성/비활성 제어
             document.getElementById("tplSubject").disabled = isAlim;
@@ -983,10 +1028,10 @@ function bindRowEvents() {
             document.getElementById("tplBody").style.background = isAlim ? "#f3f4f6" : "#fff";
             document.getElementById("tplCode").style.background = !isAlim ? "#f3f4f6" : "#fff";
 
-            if (isAlim) {
-                document.getElementById("tplAlimPreview").textContent =
-                    t.body || "(등록된 템플릿 본문이 없습니다.)";
-            }
+            // if (isAlim) {
+            //     document.getElementById("tplAlimPreview").textContent =
+            //         t.body || "(등록된 템플릿 본문이 없습니다.)";
+            // }
 
             // --- 유형 선택 시 필드 토글 ---
             document.querySelectorAll('input[name="tplType"]').forEach(radio => {
@@ -996,7 +1041,7 @@ function bindRowEvents() {
 
                     document.getElementById("tplKakaoChannelRow").hidden = !alimSelected;
                     document.getElementById("tplCodeRow").hidden = !alimSelected;
-                    document.getElementById("tplAlimPreviewRow").hidden = !alimSelected;
+                    // document.getElementById("tplAlimPreviewRow").hidden = !alimSelected;
 
                     // 활성/비활성 전환
                     document.getElementById("tplSubject").disabled = alimSelected;
@@ -1008,11 +1053,11 @@ function bindRowEvents() {
                     document.getElementById("tplCode").style.background = !alimSelected ? "#f3f4f6" : "#fff";
 
                     // 알림톡 미리보기 표시
-                    if (alimSelected) {
-                        const t2 = TEMPLATES.find(x => x.id === currentTplId);
-                        document.getElementById("tplAlimPreview").textContent =
-                            t2?.body || "(등록된 템플릿 본문이 없습니다.)";
-                    }
+                    // if (alimSelected) {
+                    //     const t2 = TEMPLATES.find(x => x.id === currentTplId);
+                    //     document.getElementById("tplAlimPreview").textContent =
+                    //         t2?.body || "(등록된 템플릿 본문이 없습니다.)";
+                    // }
                 });
             });
         }
