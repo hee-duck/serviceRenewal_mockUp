@@ -375,6 +375,7 @@
                 <option>조치 완료</option>
             </select>
             <button id="btnSelectTplMonitor">활성 템플릿 선택</button>
+            <span id="monitorBadge" style="margin-left:10px;"></span>
             <button class="primary" id="btnSearch">검색</button>
             <button id="btnReset">초기화</button>
         </div>
@@ -434,7 +435,8 @@
                 <option>갱신 완료</option>
                 <option>보류</option>
             </select>
-            <button id="btnSelectTplMonitor">활성 템플릿 선택</button>
+            <button id="btnSelectTplRenewal">활성 템플릿 선택</button>
+            <span id="renewalBadge" style="margin-left:10px;"></span>
             <button class="primary" id="btnSearch">검색</button>
             <button id="btnReset">초기화</button>
         </div>
@@ -469,11 +471,11 @@
         <table class="grid" id="templateTable">
             <thead>
                 <tr>
-                    <th>활성화</th>
                     <th>구분</th>
                     <th>제목</th>
                     <th>본문</th>
                     <th>수정</th>
+                    <th>삭제</th>
                 </tr>
             </thead>
             <tbody id="templateBody"></tbody>
@@ -482,7 +484,7 @@
     </section>
 
     <!-- 활성 템플릿 선택 모달 -->
-    <dialog id="dlgSelectTpl">
+    <!-- <dialog id="dlgSelectTpl">
         <div class="modal">
             <header>
                 <h3>활성화된 템플릿 선택</h3>
@@ -502,7 +504,7 @@
                 </table>
             </div>
         </div>
-    </dialog>
+    </dialog> -->
 
     <!-- 🧩 템플릿 상세 모달 -->
     <dialog id="dlgTemplateDetail">
@@ -565,6 +567,29 @@
             <div class="footer">
                 <button class="save-btn" id="btnTplSave">저장</button>
                 <button onclick="dlgTemplateDetail.close()">닫기</button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- 활성 템플릿 선택 모달 -->
+    <dialog id="dlgSelectTpl">
+        <div class="modal">
+            <header>
+                <h3>공용 템플릿 선택</h3>
+                <button onclick="dlgSelectTpl.close()">닫기</button>
+            </header>
+            <div class="body">
+                <table class="grid">
+                    <thead>
+                        <tr>
+                            <th>구분</th>
+                            <th>제목</th>
+                            <th>본문</th>
+                            <th>선택</th>
+                        </tr>
+                    </thead>
+                    <tbody id="selectTplBody"></tbody>
+                </table>
             </div>
         </div>
     </dialog>
@@ -919,20 +944,12 @@ WHERE company_id='${id}';`);
             }
 
             templateBody.innerHTML = list.map((t, i) => `
-    <tr data-idx="${i}" class="${t.is_active ? "active-template" : ""}">
-      <td>
-        <label class="switch">
-          <input type="checkbox" class="tpl-active" ${t.is_active ? "checked" : ""}>
-          <span class="slider"></span>
-        </label>
-      </td>
+    <tr data-idx="${i}">
       <td>${t.type === "mail" ? "메일" : "알림톡"}</td>
       <td>${t.type === "mail" ? t.mail_title : t.alim_code}</td>
       <td style="white-space: pre-wrap; max-width: 400px;">${t.type === "mail" ? t.mail_body : t.alim_body}</td>
-<td>
-  <button class="edit-btn">수정</button>
-  <button class="delete-btn" style="margin-left:6px;">삭제</button>
-</td>
+      <td><button class="edit-btn">수정</button></td>
+      <td><button class="delete-btn">삭제</button></td>
     </tr>
   `).join("");
 
@@ -1038,6 +1055,102 @@ WHERE company_id='${id}';`);
             alert("템플릿이 추가되었습니다.");
             dlgAddTpl.close();
             renderTemplateDashboard();
+        });
+
+        /* -----------------------------
+ 🟦 활성 템플릿 선택 (모니터링 / 보증보험 공용)
+----------------------------- */
+        let selectedTemplates = {
+            monitor: null,
+            renewal: null
+        };
+
+        // 활성 템플릿 선택 모달 열기
+        function openSelectTemplate(tabName) {
+            const dlg = document.getElementById("dlgSelectTpl");
+            const body = document.getElementById("selectTplBody");
+
+            if (!dlg || !body) {
+                alert("모달을 찾을 수 없습니다. dlgSelectTpl ID를 확인하세요.");
+                return;
+            }
+
+            dlg.showModal();
+
+            const list = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
+
+            if (list.length === 0) {
+                body.innerHTML = `<tr><td colspan="4">등록된 템플릿이 없습니다.</td></tr>`;
+                return;
+            }
+
+            body.innerHTML = list.map((tpl, i) => `
+    <tr>
+      <td>${tpl.type === "mail" ? "메일" : "알림톡"}</td>
+      <td>${tpl.type === "mail" ? tpl.mail_title : tpl.alim_code}</td>
+      <td style="max-width:400px; white-space:pre-wrap;">${tpl.type === "mail" ? tpl.mail_body : tpl.alim_body}</td>
+      <td><button class="select-btn" data-idx="${i}" data-tab="${tabName}">선택</button></td>
+    </tr>
+  `).join("");
+
+            // 각 선택 버튼에 클릭 이벤트 추가
+            document.querySelectorAll(".select-btn").forEach(btn => {
+                btn.addEventListener("click", (e) => {
+                    const idx = e.target.dataset.idx;
+                    const tab = e.target.dataset.tab;
+                    applyTemplate(tab, idx);
+                });
+            });
+        }
+
+
+        // 템플릿 선택
+        function applyTemplate(tabName, idx) {
+            const list = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
+            const tpl = list[idx];
+            if (!tpl) return alert("템플릿 정보를 찾을 수 없습니다.");
+
+            selectedTemplates[tabName] = tpl;
+            localStorage.setItem("selected_templates", JSON.stringify(selectedTemplates));
+
+            dlgSelectTpl.close();
+            alert(`'${tpl.type === "mail" ? tpl.mail_title : tpl.alim_code}' 템플릿이 선택되었습니다.`);
+            renderSelectedBadges();
+        }
+
+        // 뱃지 렌더링
+        function renderSelectedBadges() {
+            ["monitor", "renewal"].forEach(tab => {
+                const badgeId = tab === "monitor" ? "monitorBadge" : "renewalBadge";
+                const tpl = selectedTemplates[tab];
+                const container = document.getElementById(badgeId);
+                if (tpl) {
+                    container.innerHTML = `<span style="
+        background:#e0f2fe; 
+        color:#0369a1; 
+        padding:4px 10px; 
+        border-radius:12px; 
+        font-size:12px;">
+        ${tpl.type === "mail" ? tpl.mail_title : tpl.alim_code}
+      </span>`;
+                } else {
+                    container.innerHTML = `<span style="color:#9ca3af; font-size:12px;">선택된 템플릿 없음</span>`;
+                }
+            });
+        }
+
+        // 초기화
+        document.addEventListener("DOMContentLoaded", () => {
+            // 버튼 이벤트 연결
+            const btnMonitor = document.getElementById("btnSelectTplMonitor");
+            const btnRenewal = document.getElementById("btnSelectTplRenewal");
+
+            if (btnMonitor) {
+                btnMonitor.addEventListener("click", () => openSelectTemplate("monitor"));
+            }
+            if (btnRenewal) {
+                btnRenewal.addEventListener("click", () => openSelectTemplate("renewal"));
+            }
         });
 
         // 페이지 로드시 테이블 렌더링
