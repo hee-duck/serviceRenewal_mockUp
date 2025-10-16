@@ -251,6 +251,27 @@
         .save-btn:hover {
             background: #0ea76b;
         }
+
+        /* 템플릿 추가 모달 전용 스타일 */
+        #dlgAddTpl .form-row.radio-group {
+            display: flex !important;
+            /* grid 속성 덮어쓰기 */
+            align-items: center;
+            gap: 20px;
+        }
+
+        #dlgAddTpl .form-row.radio-group .label {
+            width: 60px;
+            color: var(--muted);
+        }
+
+        #dlgAddTpl .form-row.radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 13px;
+            cursor: pointer;
+        }
     </style>
 </head>
 
@@ -481,6 +502,52 @@
         </div>
     </dialog>
 
+    <!--  템플릿 추가 모달 -->
+    <dialog id="dlgAddTpl">
+        <div class="modal">
+            <header>
+                <h3>템플릿 추가</h3>
+                <button onclick="dlgAddTpl.close()">닫기</button>
+            </header>
+            <div class="body">
+                <div class="form-row radio-group">
+                    <div class="label">구분</div>
+                    <label><input type="radio" name="tplTypeRadio" value="mail"> 메일</label>
+                    <label><input type="radio" name="tplTypeRadio" value="alim" checked> 알림톡</label>
+                </div>
+
+                <!-- 메일 템플릿 폼 -->
+                <div id="tplMailForm">
+                    <div class="form-row">
+                        <div class="label">제목</div>
+                        <input type="text" id="tplMailTitleInput" placeholder="메일 제목을 입력하세요">
+                    </div>
+                    <div class="form-row">
+                        <div class="label">내용</div>
+                        <textarea id="tplMailBodyInput" rows="6" placeholder="메일 본문 내용을 입력하세요"></textarea>
+                    </div>
+                </div>
+
+                <!-- 알림톡 템플릿 폼 -->
+                <div id="tplAlimForm" class="hidden">
+                    <div class="form-row">
+                        <div class="label">템플릿 코드</div>
+                        <input type="text" id="tplAlimCodeInput" placeholder="카카오 알림톡 템플릿 코드">
+                    </div>
+                    <div class="form-row">
+                        <div class="label">미리보기</div>
+                        <button id="btnPreviewAlim">DB에서 템플릿 조회 → 본문 불러오기</button>
+                    </div>
+                    <textarea id="tplAlimBodyPreview" rows="6" placeholder="불러온 템플릿 본문" readonly></textarea>
+                </div>
+            </div>
+
+            <div class="footer">
+                <button class="save-btn" id="btnAddTplConfirm">추가하기</button>
+            </div>
+        </div>
+    </dialog>
+
     <script>
         let monitorSortAsc = true;   // 금액 모니터링 탭 정렬 방향
         let renewalSortAsc = true;   // 보증보험 관리 탭 정렬 방향
@@ -696,6 +763,80 @@ WHERE company_id='${id}';`);
             renewalSortAsc = !renewalSortAsc;
             const sorted = [...data].sort((a, b) => renewalSortAsc ? a.billing - b.billing : b.billing - a.billing);
             renderRenewal(sorted);
+        });
+
+        /* -----------------------------
+        템플릿 추가 모달 로직
+        ----------------------------- */
+        const btnAddTpl = document.getElementById("btnAddTpl");
+        const dlgAddTpl = document.getElementById("dlgAddTpl");
+        const mailForm = document.getElementById("tplMailForm");
+        const alimForm = document.getElementById("tplAlimForm");
+
+        // 라디오 전환
+        document.querySelectorAll("input[name='tplTypeRadio']").forEach(r => {
+            r.addEventListener("change", e => {
+                if (e.target.value === "mail") {
+                    mailForm.classList.remove("hidden");
+                    alimForm.classList.add("hidden");
+                } else {
+                    mailForm.classList.add("hidden");
+                    alimForm.classList.remove("hidden");
+                }
+            });
+        });
+
+        // 버튼 클릭 → 모달 열기
+        btnAddTpl.addEventListener("click", () => dlgAddTpl.showModal());
+
+        // 알림톡 미리보기 (DB 조회 가정)
+        document.getElementById("btnPreviewAlim").addEventListener("click", () => {
+            const code = document.getElementById("tplAlimCodeInput").value.trim();
+            if (!code) return alert("템플릿 코드를 입력하세요.");
+            // 실제 구현에서는 fetch()로 서버 조회. 여기선 예시 데이터 사용.
+            const sample = {
+                code,
+                body: `[${code}] 보험 만기 안내드립니다.\n제출 기한: 2025-10-22\n감사합니다.`
+            };
+            document.getElementById("tplAlimBodyPreview").value = sample.body;
+            alert("템플릿 본문이 불러와졌습니다.");
+        });
+
+        // 추가하기 클릭
+        document.getElementById("btnAddTplConfirm").addEventListener("click", () => {
+            const type = document.querySelector("input[name='tplTypeRadio']:checked").value;
+
+            const templateList = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
+
+            if (type === "mail") {
+                const title = document.getElementById("tplMailTitleInput").value.trim();
+                const body = document.getElementById("tplMailBodyInput").value.trim();
+                if (!title || !body) return alert("제목과 내용을 입력하세요.");
+                templateList.push({
+                    category: "manual_add",
+                    type,
+                    name: title,
+                    mail_title: title,
+                    mail_body: body,
+                    is_active: false
+                });
+            } else {
+                const code = document.getElementById("tplAlimCodeInput").value.trim();
+                const body = document.getElementById("tplAlimBodyPreview").value.trim();
+                if (!code || !body) return alert("템플릿 코드와 본문을 입력하세요.");
+                templateList.push({
+                    category: "manual_add",
+                    type,
+                    name: code,
+                    alim_code: code,
+                    alim_body: body,
+                    is_active: false
+                });
+            }
+
+            localStorage.setItem("insurance_templates", JSON.stringify(templateList));
+            alert("템플릿이 추가되었습니다.");
+            dlgAddTpl.close();
         });
 
         /* -----------------------------
