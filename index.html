@@ -372,6 +372,25 @@
         .toolbar-mini button:hover {
             background: #e5e7eb;
         }
+
+        /* 템플릿 수정 모달 */
+        #dlgEditTpl #editMailBody {
+            width: calc(100% - 20px);
+            /* 모달 내부 전체폭 - 여백 */
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* "메일 본문" 라벨을 한 줄 위로 빼서 전체 폭을 차지하게 */
+        #dlgEditTpl .form-row.mail-body-row {
+            display: block;
+            /* grid 대신 block으로 변환 */
+        }
+
+        #dlgEditTpl .form-row.mail-body-row .label {
+            display: block;
+            margin-bottom: 6px;
+        }
     </style>
 </head>
 
@@ -632,7 +651,8 @@
                             <button type="button" onclick="formatText('underline')"><u>U</u></button>
                             <button type="button" onclick="formatText('insertUnorderedList')">• 목록</button>
                             <button type="button" onclick="formatText('createLink')">링크</button>
-                            <button type="button" onclick="formatText('removeFormat')">서식제거</button>
+                            <button type="button" id="btnTogglePreviewAdd">미리보기 전환</button>
+
                         </div>
                     </div>
                     <div class="form-row">
@@ -1004,15 +1024,100 @@ WHERE company_id='${id}';`);
             const tpl = list[idx];
             if (!tpl) return alert("템플릿 정보를 찾을 수 없습니다.");
 
-            const newBody = prompt("본문을 수정하세요:", tpl.type === "mail" ? tpl.mail_body : tpl.alim_body);
-            if (newBody === null) return; // 취소
+            // 모달 생성 또는 가져오기
+            let dlg = document.getElementById("dlgEditTpl");
+            if (!dlg) {
+                dlg = document.createElement("dialog");
+                dlg.id = "dlgEditTpl";
+                dlg.innerHTML = `
+      <div class="modal">
+        <header>
+          <h3>템플릿 수정</h3>
+          <button onclick="dlgEditTpl.close()">닫기</button>
+        </header>
+        <div class="body" id="editTplBody"></div>
+        <div class="footer">
+          <button class="save-btn" id="btnTplUpdate">저장</button>
+          <button onclick="dlgEditTpl.close()">취소</button>
+        </div>
+      </div>`;
+                document.body.appendChild(dlg);
+            }
 
-            if (tpl.type === "mail") tpl.mail_body = newBody;
-            else tpl.alim_body = newBody;
+            const body = dlg.querySelector("#editTplBody");
 
-            localStorage.setItem("insurance_templates", JSON.stringify(list));
-            alert("템플릿이 수정되었습니다.");
-            renderTemplateDashboard();
+            if (tpl.type === "mail") {
+                // 메일 에디터 (HTML 서식 유지)
+                body.innerHTML = `
+  <div class="form-row">
+    <div class="label">메일 제목</div>
+    <input id="editMailTitle" type="text" value="${tpl.mail_title}">
+  </div>
+  <div class="form-row mail-body-row">
+    <div class="label">메일 본문</div>
+    <div class="toolbar-mini">
+      <button type="button" onclick="formatText('bold')"><b>B</b></button>
+      <button type="button" onclick="formatText('italic')"><i>I</i></button>
+      <button type="button" onclick="formatText('underline')"><u>U</u></button>
+      <button type="button" onclick="formatText('insertUnorderedList')">• 목록</button>
+      <button type="button" onclick="formatText('createLink')">링크</button>
+      <button type="button" id="btnTogglePreviewEdit">미리보기 전환</button>
+    </div>
+    <div id="editMailBody" class="editor" contenteditable="true"
+      style="border:1px solid #e5e7eb; border-radius:6px; min-height:300px; padding:10px; background:#fff;">${tpl.mail_body}</div>
+  </div>`;
+
+            } else {
+                // 알림톡 수정 (일반 텍스트)
+                body.innerHTML = `
+      <div class="form-row">
+        <div class="label">템플릿 코드</div>
+        <input id="editAlimCode" type="text" value="${tpl.alim_code}">
+      </div>
+      <div class="form-row">
+        <div class="label">본문</div>
+        <textarea id="editAlimBody" rows="6">${tpl.alim_body}</textarea>
+      </div>`;
+            }
+
+            dlg.showModal();
+
+            // 템플릿 수정 모달 내 미리보기 버튼 이벤트
+            const previewBtn = document.getElementById("btnTogglePreviewEdit");
+            if (previewBtn) {
+                previewBtn.onclick = () => openPreviewDialog("editMailBody");
+            }
+
+            // 🔹 화면 높이에 맞춰 에디터 동적 크기 조정
+            const editor = dlg.querySelector(".editor");
+            if (editor) {
+                const vh = window.innerHeight;
+                const maxHeight = Math.min(500, vh * 0.6);
+                editor.style.minHeight = `${maxHeight}px`;
+            }
+
+            // 저장 버튼 이벤트
+            dlg.querySelector("#btnTplUpdate").onclick = () => {
+                if (tpl.type === "mail") {
+                    const newTitle = document.getElementById("editMailTitle").value.trim();
+                    const newBody = document.getElementById("editMailBody").innerHTML.trim();
+                    if (!newTitle || !newBody) return alert("제목과 본문을 모두 입력하세요.");
+                    tpl.mail_title = newTitle;
+                    tpl.mail_body = newBody;
+                } else {
+                    const newCode = document.getElementById("editAlimCode").value.trim();
+                    const newBody = document.getElementById("editAlimBody").value.trim();
+                    if (!newCode || !newBody) return alert("코드와 본문을 모두 입력하세요.");
+                    tpl.alim_code = newCode;
+                    tpl.alim_body = newBody;
+                }
+
+                list[idx] = tpl;
+                localStorage.setItem("insurance_templates", JSON.stringify(list));
+                dlg.close();
+                alert("템플릿이 수정되었습니다.");
+                renderTemplateDashboard();
+            };
         }
 
         /* 템플릿 추가 후 자동 반영 */
@@ -1041,6 +1146,55 @@ WHERE company_id='${id}';`);
             dlgAddTpl.close();
             renderTemplateDashboard();
         });
+
+        // HTML → 인코딩 (엔티티 변환)
+        function escapeHtml(html) {
+            return html
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // 템플릿 미리보기 토글
+        function togglePreview(editorId, buttonId) {
+            const editor = document.getElementById(editorId);
+            const btn = document.getElementById(buttonId);
+
+            if (!editor || !btn) return;
+
+            const isPreview = editor.dataset.preview === "true";
+
+            if (!isPreview) {
+                // 현재 에디터 모드 → 미리보기 전환
+                const html = editor.innerHTML;
+                editor.dataset.raw = html; // 원본 저장
+                editor.textContent = html; // 텍스트로 변환 (escape 효과)
+                editor.dataset.preview = "true";
+                editor.contentEditable = "false";
+                btn.textContent = "에디터 전환";
+                editor.style.background = "#f3f4f6";
+            } else {
+                // 미리보기 → 에디터 모드 복귀
+                const raw = editor.dataset.raw || editor.textContent;
+                editor.innerHTML = raw;
+                editor.dataset.preview = "false";
+                editor.contentEditable = "true";
+                btn.textContent = "미리보기 전환";
+                editor.style.background = "#fff";
+            }
+        }
+
+        // 템플릿 추가 모달 내 미리보기 버튼 이벤트
+        btnAddTpl.addEventListener("click", () => {
+            dlgAddTpl.showModal();
+            const previewBtn = document.getElementById("btnTogglePreviewAdd");
+            if (previewBtn) {
+                previewBtn.onclick = () => openPreviewDialog("tplMailBodyEditor");
+            }
+        });
+
 
         /* 활성 템플릿 선택 (모니터링 / 보증보험 공용) */
         let selectedTemplates = {
@@ -1138,8 +1292,9 @@ WHERE company_id='${id}';`);
 
         // 페이지 로드시 테이블 렌더링
         document.addEventListener("DOMContentLoaded", renderTemplateDashboard);
-    </script>
 
+        
+    </script>
 </body>
 
 </html>
