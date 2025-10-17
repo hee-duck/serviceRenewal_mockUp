@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="ko">
-
+<!-- 수정 필요 항목 -->
+<!-- 템플릿 관리 랜더링 시 전체보기 버튼 미액션 수정 필요 -->
+<!-- 템플릿 추가/수정 시 알림톡 변수를 리스트로 불러오고 변수 값을 엑셀에 업로드할 수 있도록 구현 필요 -->
 <head>
     <meta charset="UTF-8">
     <title>이행보증보험 관리</title>
@@ -917,7 +919,21 @@ WHERE company_id='${id}';`);
         });
 
         // 버튼 클릭 → 모달 열기
-        btnAddTpl.addEventListener("click", () => dlgAddTpl.showModal());
+        btnAddTpl.addEventListener("click", () => {
+            dlgAddTpl.showModal();
+
+            // 현재 선택된 라디오값 확인
+            const selectedType = document.querySelector("input[name='tplTypeRadio']:checked")?.value;
+
+            // 메일/알림톡 폼 토글
+            if (selectedType === "mail") {
+                mailForm.classList.remove("hidden");
+                alimForm.classList.add("hidden");
+            } else {
+                mailForm.classList.add("hidden");
+                alimForm.classList.remove("hidden");
+            }
+        });
 
         // 알림톡 미리보기 (DB 조회 가정)
         document.getElementById("btnPreviewAlim").addEventListener("click", () => {
@@ -952,18 +968,87 @@ WHERE company_id='${id}';`);
                 return;
             }
 
-            templateBody.innerHTML = list.map((t, i) => `
-    <tr data-idx="${i}">
-      <td>${t.type === "mail" ? "메일" : "알림톡"}</td>
-      <td>${t.type === "mail" ? t.mail_title : t.alim_code}</td>
-      <td style="max-width: 400px;">${t.type === "mail" ? t.mail_body : t.alim_body}</td>
-      <td><button class="edit-btn">수정</button></td>
-      <td><button class="delete-btn">삭제</button></td>
-    </tr>
-  `).join("");
+            // HTML 태그 제거 후 문자열 자르기
+            const stripHtml = (html) => {
+                const tmp = document.createElement("div");
+                tmp.innerHTML = html;
+                return tmp.textContent || tmp.innerText || "";
+            };
 
+            // 목록 렌더링
+            templateBody.innerHTML = list
+                .map((t, i) => {
+                    const content = t.type === "mail" ? t.mail_body : t.alim_body;
+                    const text = stripHtml(content).trim().replace(/\s+/g, " ");
+                    const preview = text.length > 100 ? text.slice(0, 100) + "..." : text;
+
+                    return `
+        <tr data-idx="${i}">
+          <td>${t.type === "mail" ? "메일" : "알림톡"}</td>
+          <td>${t.type === "mail" ? t.mail_title : t.alim_code}</td>
+          <td style="max-width:400px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            ${preview}
+            ${text.length > 100 ? `<button class="view-btn" data-idx="${i}" style="margin-left:8px;">전체보기</button>` : ""}
+          </td>
+          <td><button class="edit-btn">수정</button></td>
+          <td><button class="delete-btn">삭제</button></td>
+        </tr>`;
+                })
+                .join("");
+
+            // 기존 수정/삭제 바인딩
             bindTemplateEvents();
+
+            // ✅ 전체보기 버튼 클릭 이벤트는 별도 바인딩 (bindTemplateEvents() 뒤에 와야 함)
+            document.querySelectorAll(".view-btn").forEach((btn) => {
+                btn.addEventListener("click", (e) => {
+                    const idx = e.target.dataset.idx;
+                    const tpl = list[idx];
+                    if (!tpl) return alert("템플릿 정보를 찾을 수 없습니다.");
+
+                    // 모달 생성
+                    let dlg = document.getElementById("dlgViewTpl");
+                    if (!dlg) {
+                        dlg = document.createElement("dialog");
+                        dlg.id = "dlgViewTpl";
+                        document.body.appendChild(dlg);
+                    }
+
+                    dlg.innerHTML = `
+        <div style="max-width:900px;max-height:80vh;overflow:auto;padding:20px;background:#fff;border-radius:8px;">
+          <h3 style="margin-top:0;">${tpl.type === "mail" ? tpl.mail_title : tpl.alim_code}</h3>
+          <div style="border:1px solid #e5e7eb;padding:16px;margin-top:12px;">
+            ${tpl.type === "mail" ? tpl.mail_body : tpl.alim_body}
+          </div>
+          <div style="text-align:right;margin-top:12px;">
+            <button onclick="document.getElementById('dlgViewTpl').close()">닫기</button>
+          </div>
+        </div>`;
+                    dlg.showModal();
+                });
+            });
         }
+
+
+        //         function renderTemplateDashboard() {
+        //             const list = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
+        //             if (!list.length) {
+        //                 templateBody.innerHTML = `<tr><td colspan="5">등록된 템플릿이 없습니다.</td></tr>`;
+        //                 return;
+        //             }
+
+        //             templateBody.innerHTML = list.map((t, i) => `
+        //     <tr data-idx="${i}">
+        //       <td>${t.type === "mail" ? "메일" : "알림톡"}</td>
+        //       <td>${t.type === "mail" ? t.mail_title : t.alim_code}</td>
+        //       <td style="max-width: 400px;">${t.type === "mail" ? t.mail_body : t.alim_body}</td>
+        //       <td><button class="edit-btn">수정</button></td>
+        //       <td><button class="delete-btn">삭제</button></td>
+        //     </tr>
+        //   `).join("");
+
+        //             bindTemplateEvents();
+        //         }
 
         function bindTemplateEvents() {
             // 활성화 토글
@@ -1292,9 +1377,9 @@ WHERE company_id='${id}';`);
 
         // 페이지 로드시 테이블 렌더링
         document.addEventListener("DOMContentLoaded", renderTemplateDashboard);
-
-        
     </script>
+
+    <script src="preview.js"></script>
 </body>
 
 </html>
