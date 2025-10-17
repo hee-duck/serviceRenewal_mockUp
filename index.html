@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>이행보증보험 관리 (2탭 + 상세모달)</title>
+    <title>이행보증보험 관리</title>
     <style>
         :root {
             --bg: #f7f8fb;
@@ -315,12 +315,12 @@
             box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
         }
 
-        /* ✅ 활성 상태 (파란색 테마) */
+        /* 템플릿 활성 상태 (파란색 테마) */
         .switch input:checked+.slider {
             background-color: #2563eb;
         }
 
-        /* ✅ 활성 시 동그라미 이동 */
+        /* 템플릿 활성 시 동그라미 이동 */
         .switch input:checked+.slider:before {
             transform: translateX(20px);
         }
@@ -330,7 +330,7 @@
             box-shadow: 0 0 4px rgba(37, 99, 235, 0.3);
         }
 
-        /* 🩵 활성화된 템플릿 행 강조 */
+        /* 활성화된 템플릿 행 강조 */
         tr.active-template {
             background-color: #e0f2fe;
             /* 연한 하늘색 */
@@ -339,6 +339,38 @@
         tr.active-template:hover {
             background-color: #bae6fd;
             /* hover 시 조금 진하게 */
+        }
+
+        /* 템플릿 관리 메일 에디터 스타일 */
+        .editor {
+            font-family: "Noto Sans KR", sans-serif;
+            font-size: 14px;
+            line-height: 1.6;
+            outline: none;
+        }
+
+        .editor:focus {
+            border-color: var(--primary);
+            background: #f9fafb;
+        }
+
+        .toolbar-mini {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .toolbar-mini button {
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .toolbar-mini button:hover {
+            background: #e5e7eb;
         }
     </style>
 </head>
@@ -483,30 +515,7 @@
         <button id="btnAddTpl" class="primary">템플릿 추가</button>
     </section>
 
-    <!-- 활성 템플릿 선택 모달 -->
-    <!-- <dialog id="dlgSelectTpl">
-        <div class="modal">
-            <header>
-                <h3>활성화된 템플릿 선택</h3>
-                <button onclick="dlgSelectTpl.close()">닫기</button>
-            </header>
-            <div class="body">
-                <table class="grid">
-                    <thead>
-                        <tr>
-                            <th>구분</th>
-                            <th>템플릿명</th>
-                            <th>유형</th>
-                            <th>선택</th>
-                        </tr>
-                    </thead>
-                    <tbody id="selectTplBody"></tbody>
-                </table>
-            </div>
-        </div>
-    </dialog> -->
-
-    <!-- 🧩 템플릿 상세 모달 -->
+    <!-- 템플릿 상세 모달 -->
     <dialog id="dlgTemplateDetail">
         <div class="modal">
             <header>
@@ -614,9 +623,24 @@
                         <div class="label">제목</div>
                         <input type="text" id="tplMailTitleInput" placeholder="메일 제목을 입력하세요">
                     </div>
+                    <!-- 메일 에디터 -->
+                    <div class="form-row">
+                        <div class="label"></div>
+                        <div class="toolbar-mini">
+                            <button type="button" onclick="formatText('bold')"><b>B</b></button>
+                            <button type="button" onclick="formatText('italic')"><i>I</i></button>
+                            <button type="button" onclick="formatText('underline')"><u>U</u></button>
+                            <button type="button" onclick="formatText('insertUnorderedList')">• 목록</button>
+                            <button type="button" onclick="formatText('createLink')">링크</button>
+                            <button type="button" onclick="formatText('removeFormat')">서식제거</button>
+                        </div>
+                    </div>
                     <div class="form-row">
                         <div class="label">내용</div>
-                        <textarea id="tplMailBodyInput" rows="6" placeholder="메일 본문 내용을 입력하세요"></textarea>
+                        <div id="tplMailBodyEditor" class="editor" contenteditable="true"
+                            style="border:1px solid #e5e7eb; border-radius:6px; min-height:160px; padding:8px; background:#fff;">
+                            <p>메일 본문 내용을 입력하세요.</p>
+                        </div>
                     </div>
                 </div>
 
@@ -644,9 +668,7 @@
         let monitorSortAsc = true;   // 금액 모니터링 탭 정렬 방향
         let renewalSortAsc = true;   // 보증보험 관리 탭 정렬 방향
 
-        /* -----------------------------
-         🟦 공통: 탭/모달 전환
-        ----------------------------- */
+        /* 공통: 탭/모달 전환 */
         const tabs = document.querySelectorAll(".tab-btn");
         const contents = document.querySelectorAll(".tab-content");
         tabs.forEach(btn => {
@@ -658,9 +680,7 @@
             });
         });
 
-        /* -----------------------------
-         🟩 (1) 금액 모니터링 탭
-        ----------------------------- */
+        /* 1) 금액 모니터링 탭 */
         const rows = [
             { id: "a2m_innopolis", company: "에이엠이노폴리스", amount: 3000000, billing: 2450000, rate: 81.7, status: "warn", alert_c: "2025-10-13 09:15", alert_i: "2025-10-13 09:16", action: "증액 요청 중", memo: "보험 증액 검토 중" },
             { id: "hansunginst", company: "한성계기", amount: 3000000, billing: 3400000, rate: 113, status: "danger", alert_c: "2025-10-12 10:03", alert_i: "2025-10-12 10:03", action: "조치 완료", memo: "담당자 연락 완료" },
@@ -738,24 +758,22 @@ WHERE company_id='${id}';`);
         };
         renderMonitor(rows);
 
-        // ⬇️ 당월 청구액 정렬 기능 추가
+        // 당월 청구액 정렬 기능 추가
         document.querySelector("#monitorTable thead th:nth-child(4)")?.addEventListener("click", () => {
             monitorSortAsc = !monitorSortAsc;
             const sorted = [...rows].sort((a, b) => monitorSortAsc ? a.billing - b.billing : b.billing - a.billing);
             renderMonitor(sorted);
         });
 
-        /* -----------------------------
-         🟨 (2) 보증보험 관리 탭 로직
-        ----------------------------- */
+        /* (2) 보증보험 관리 탭 로직 */
 
-        // 🔹 직전 3개월 계산용 월 범위 라벨 (예: 10월 → 7,8,9월)
+        // 직전 3개월 계산용 월 범위 라벨 (예: 10월 → 7,8,9월)
         const now = new Date();
         const curMonth = now.getMonth() + 1; // JS는 0~11 반환
         const months = [curMonth - 3, curMonth - 2, curMonth - 1].map(m => (m <= 0 ? m + 12 : m));
         const monthLabel = months.map(m => `${m}월`).join(", ");
 
-        // 🔹 테이블 헤더 업데이트
+        // 테이블 헤더 업데이트
         document.querySelector("#renewalTable thead th:nth-child(7)").innerText = `▲▼ 직전 3개월 청구액 (${monthLabel})`;
 
         const data = [
@@ -894,46 +912,17 @@ WHERE company_id='${id}';`);
             alert("템플릿 본문이 불러와졌습니다.");
         });
 
-        // 추가하기 클릭
-        document.getElementById("btnAddTplConfirm").addEventListener("click", () => {
-            const type = document.querySelector("input[name='tplTypeRadio']:checked").value;
-
-            const templateList = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
-
-            if (type === "mail") {
-                const title = document.getElementById("tplMailTitleInput").value.trim();
-                const body = document.getElementById("tplMailBodyInput").value.trim();
-                if (!title || !body) return alert("제목과 내용을 입력하세요.");
-                templateList.push({
-                    category: "manual_add",
-                    type,
-                    name: title,
-                    mail_title: title,
-                    mail_body: body,
-                    is_active: false
-                });
+        // 에디터 서식 버튼 기능
+        function formatText(command) {
+            if (command === "createLink") {
+                const url = prompt("링크 URL을 입력하세요:", "https://");
+                if (url) document.execCommand(command, false, url);
             } else {
-                const code = document.getElementById("tplAlimCodeInput").value.trim();
-                const body = document.getElementById("tplAlimBodyPreview").value.trim();
-                if (!code || !body) return alert("템플릿 코드와 본문을 입력하세요.");
-                templateList.push({
-                    category: "manual_add",
-                    type,
-                    name: code,
-                    alim_code: code,
-                    alim_body: body,
-                    is_active: false
-                });
+                document.execCommand(command, false, null);
             }
+        }
 
-            localStorage.setItem("insurance_templates", JSON.stringify(templateList));
-            alert("템플릿이 추가되었습니다.");
-            dlgAddTpl.close();
-        });
-
-        /* -----------------------------
- 🧩 템플릿 관리 대시보드 렌더링
------------------------------ */
+        /* 템플릿 관리 대시보드 렌더링 */
         const templateBody = document.getElementById("templateBody");
 
         function renderTemplateDashboard() {
@@ -947,7 +936,7 @@ WHERE company_id='${id}';`);
     <tr data-idx="${i}">
       <td>${t.type === "mail" ? "메일" : "알림톡"}</td>
       <td>${t.type === "mail" ? t.mail_title : t.alim_code}</td>
-      <td style="white-space: pre-wrap; max-width: 400px;">${t.type === "mail" ? t.mail_body : t.alim_body}</td>
+      <td style="max-width: 400px;">${t.type === "mail" ? t.mail_body : t.alim_body}</td>
       <td><button class="edit-btn">수정</button></td>
       <td><button class="delete-btn">삭제</button></td>
     </tr>
@@ -957,7 +946,7 @@ WHERE company_id='${id}';`);
         }
 
         function bindTemplateEvents() {
-            // 🔹 활성화 토글
+            // 활성화 토글
             document.querySelectorAll(".tpl-active").forEach((cb, idx) => {
                 cb.addEventListener("change", (e) => {
                     const list = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
@@ -980,7 +969,7 @@ WHERE company_id='${id}';`);
                 });
             });
 
-            // 🔹 수정 버튼
+            // 수정 버튼
             document.querySelectorAll(".edit-btn").forEach(btn => {
                 btn.addEventListener("click", (e) => {
                     const idx = e.target.closest("tr").dataset.idx;
@@ -988,7 +977,7 @@ WHERE company_id='${id}';`);
                 });
             });
 
-            // 🔹 삭제 버튼
+            // 삭제 버튼
             document.querySelectorAll(".delete-btn").forEach(btn => {
                 btn.addEventListener("click", (e) => {
                     const idx = parseInt(e.target.closest("tr").dataset.idx, 10);
@@ -1009,9 +998,7 @@ WHERE company_id='${id}';`);
             });
         }
 
-        /* -----------------------------
-         🧩 수정 모달
-        ----------------------------- */
+        /* 수정 모달 */
         function openTemplateEditModal(idx) {
             const list = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
             const tpl = list[idx];
@@ -1028,16 +1015,14 @@ WHERE company_id='${id}';`);
             renderTemplateDashboard();
         }
 
-        /* -----------------------------
-        템플릿 추가 후 자동 반영
-        ----------------------------- */
+        /* 템플릿 추가 후 자동 반영 */
         document.getElementById("btnAddTplConfirm").addEventListener("click", () => {
             const type = document.querySelector("input[name='tplTypeRadio']:checked").value;
             const templateList = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
 
             if (type === "mail") {
                 const title = document.getElementById("tplMailTitleInput").value.trim();
-                const body = document.getElementById("tplMailBodyInput").value.trim();
+                const body = document.getElementById("tplMailBodyEditor").innerHTML.trim();
                 if (!title || !body) return alert("제목과 내용을 입력하세요.");
                 templateList.push({
                     type, mail_title: title, mail_body: body, is_active: false
@@ -1057,9 +1042,7 @@ WHERE company_id='${id}';`);
             renderTemplateDashboard();
         });
 
-        /* -----------------------------
- 🟦 활성 템플릿 선택 (모니터링 / 보증보험 공용)
------------------------------ */
+        /* 활성 템플릿 선택 (모니터링 / 보증보험 공용) */
         let selectedTemplates = {
             monitor: null,
             renewal: null
