@@ -3,6 +3,7 @@
 <!-- 수정 필요 항목 -->
 <!-- 템플릿 관리 랜더링 시 전체보기 버튼 미액션 수정 필요 -->
 <!-- 템플릿 추가/수정 시 알림톡 변수를 리스트로 불러오고 변수 값을 엑셀에 업로드할 수 있도록 구현 필요 -->
+
 <head>
     <meta charset="UTF-8">
     <title>이행보증보험 관리</title>
@@ -42,8 +43,8 @@
             </select>
             <button id="btnSelectTplMonitor">활성 템플릿 선택</button>
             <span id="monitorBadge" style="margin-left:10px;"></span>
-            <button class="primary" id="btnSearch">검색</button>
-            <button id="btnReset">초기화</button>
+            <button class="primary" id="btnSearchMonitor">검색</button>
+            <button id="btnResetMonitor">초기화</button>
         </div>
 
         <table class="grid" id="monitorTable">
@@ -52,7 +53,7 @@
                     <th>고객 아이디</th>
                     <th>회사명</th>
                     <th>보증보험 금액</th>
-                    <th>당월 청구액▲▼</th>
+                    <th>전월 사용량▲▼</th>
                     <th>초과율(%)</th>
                     <th>상태</th>
                     <th>고객 알림일시</th>
@@ -73,6 +74,11 @@
             <input type="text" id="filterId" placeholder="고객 아이디">
             <input type="text" id="filterCompany" placeholder="회사명">
             <input type="number" id="filterDays" placeholder="만료일 N일 전" min="1" style="width:130px;">
+            <select id="filterRenewType">
+                <option value="">갱신 구분(전체)</option>
+                <option value="서비스">서비스</option>
+                <option value="보험">보험</option>
+            </select>
             <select id="filterMail1">
                 <option value="">1차 메일(전체)</option>
                 <option value="Y">발송 완료</option>
@@ -103,16 +109,19 @@
             </select>
             <button id="btnSelectTplRenewal">활성 템플릿 선택</button>
             <span id="renewalBadge" style="margin-left:10px;"></span>
-            <button class="primary" id="btnSearch">검색</button>
-            <button id="btnReset">초기화</button>
+            <button class="primary" id="btnSearchRenewal">검색</button>
+            <button id="btnResetRenewal">초기화</button>
+            <button id="btnSendSelected" class="primary">선택 메일 발송</button>
         </div>
 
         <!-- 목록 -->
         <table class="grid" id="renewalTable">
             <thead>
                 <tr>
+                    <th><input type="checkbox" id="chkAll"></th>
                     <th>고객 아이디</th>
                     <th>회사명</th>
+                    <th>갱신 구분</th>
                     <th>증권번호</th>
                     <th>보증보험 기간</th>
                     <th>보증보험 만료일</th>
@@ -385,23 +394,25 @@ WHERE company_id='${id}';`);
             });
         }
 
-        document.getElementById("btnSearch").onclick = () => renderMonitor(filterMonitor());
-        document.getElementById("btnReset").onclick = () => {
+        // 금액 모니터링 탭 검색
+        document.getElementById("btnSearchMonitor").onclick = () => renderMonitor(filterMonitor());
+
+        // 보증보험 관리 탭 검색
+        document.getElementById("btnSearchRenewal").onclick = () => {
             ["filterId", "filterCompany", "filterRate"].forEach(id => document.getElementById(id).value = "");
             ["filterStatus", "filterAction"].forEach(id => document.getElementById(id).value = "");
             renderMonitor(rows);
         };
         renderMonitor(rows);
 
-        // 당월 청구액 정렬 기능 추가
+        // 전월 사용량 정렬 기능 추가1.
         document.querySelector("#monitorTable thead th:nth-child(4)")?.addEventListener("click", () => {
             monitorSortAsc = !monitorSortAsc;
             const sorted = [...rows].sort((a, b) => monitorSortAsc ? a.billing - b.billing : b.billing - a.billing);
             renderMonitor(sorted);
         });
 
-        /* (2) 보증보험 관리 탭 로직 */
-
+        /* (2) 보증보험 관리 탭 */
         // 직전 3개월 계산용 월 범위 라벨 (예: 10월 → 7,8,9월)
         const now = new Date();
         const curMonth = now.getMonth() + 1; // JS는 0~11 반환
@@ -411,30 +422,49 @@ WHERE company_id='${id}';`);
         // 테이블 헤더 업데이트
         document.querySelector("#renewalTable thead th:nth-child(7)").innerText = `▲▼ 직전 3개월 청구액 (${monthLabel})`;
 
+        // 샘플 더미 데이터
         const data = [
             {
-                id: "frisbee", company: "프리스비", policy: "2024-0544-5990", term: "2024.12.05 ~ 2025.12.04", expire: "2025-12-04", amount: 3000000, billing: 5120000,
-                mail1: "2025-10-12 09:00", alim1: "2025-10-12 09:01", mail2: "-", alim2: "-", status: "1차 완료", memo: "서류 대기 중"
+                id: "frisbee", company: "프리스비", renewType: "서비스",
+                policy: "2024-0544-5990", term: "2024.12.05 ~ 2025.12.04", expire: "2025-12-04",
+                amount: 3000000, billing: 5120000,
+                mail1: "2025-10-12 09:00", alim1: "2025-10-12 09:01",
+                mail2: "-", alim2: "-", status: "1차 완료", memo: "서류 대기 중"
             },
             {
-                id: "livlogi", company: "리브로지", policy: "2024-0517-3794", term: "2024.11.25 ~ 2025.11.26", expire: "2025-11-26", amount: 3000000, billing: 1520000,
-                mail1: "2025-09-30 09:00", alim1: "2025-09-30 09:01", mail2: "2025-10-10 09:00", alim2: "2025-10-10 09:01", status: "갱신 완료", memo: "확인 완료"
+                id: "livlogi", company: "리브로지", renewType: "보험",
+                policy: "2024-0517-3794", term: "2024.11.25 ~ 2025.11.26", expire: "2025-11-26",
+                amount: 3000000, billing: 1520000,
+                mail1: "2025-09-30 09:00", alim1: "2025-09-30 09:01",
+                mail2: "2025-10-10 09:00", alim2: "2025-10-10 09:01",
+                status: "갱신 완료", memo: "확인 완료"
             },
             {
-                id: "ysml626", company: "와이에스", policy: "2024-0533-2690", term: "2024.10.15 ~ 2025.10.15", expire: "2025-10-15", amount: 3000000, billing: 2750000,
-                mail1: "-", alim1: "-", mail2: "-", alim2: "-", status: "대기", memo: ""
+                id: "ysml626", company: "와이에스", renewType: "서비스",
+                policy: "2024-0533-2690", term: "2024.10.15 ~ 2025.10.15", expire: "2025-10-15",
+                amount: 3000000, billing: 2750000,
+                mail1: "-", alim1: "-", mail2: "-", alim2: "-",
+                status: "대기", memo: ""
             }
         ];
 
+        // 테이블 렌더링
         function renderRenewal(list) {
             const body = document.getElementById("renewalBody");
-            if (!body) return; // 1번 탭에서 실행 안되도록 안전장치
             body.innerHTML = "";
+
             list.forEach(r => {
                 body.innerHTML += `
       <tr data-id="${r.id}">
+        <td><input type="checkbox" class="row-check"></td>
         <td>${r.id}</td>
         <td>${r.company}</td>
+        <td>
+          <select class="renew-type-select">
+            <option value="서비스" ${r.renewType === "서비스" ? "selected" : ""}>서비스</option>
+            <option value="보험" ${r.renewType === "보험" ? "selected" : ""}>보험</option>
+          </select>
+        </td>
         <td>${r.policy}</td>
         <td>${r.term}</td>
         <td>${r.expire}</td>
@@ -457,33 +487,61 @@ WHERE company_id='${id}';`);
         <td><button class="save-btn">저장</button></td>
       </tr>`;
             });
+
             bindSaveRenewal();
         }
 
+        // 저장 및 select 변경 반영
         function bindSaveRenewal() {
+            // 저장 버튼
             document.querySelectorAll("#renewalBody .save-btn").forEach(btn => {
                 btn.onclick = e => {
                     const row = e.target.closest("tr");
                     const id = row.dataset.id;
+                    const renewType = row.querySelector(".renew-type-select").value;
                     const status = row.querySelector(".status-select").value;
                     const memo = row.querySelector(".memo").value.trim();
+
+                    // data 배열 업데이트
+                    const target = data.find(d => d.id === id);
+                    if (target) {
+                        target.renewType = renewType;
+                        target.status = status;
+                        target.memo = memo;
+                    }
+
                     console.log(`UPDATE insurance_renewal 
-SET status='${status}', memo='${memo}', updated_at=NOW() 
+SET renew_type='${renewType}', status='${status}', memo='${memo}', updated_at=NOW() 
 WHERE company_id='${id}';`);
-                    alert(`보증보험 관리 저장 완료 (고객ID: ${id})`);
+                    alert(`저장 완료 (고객ID: ${id})`);
                 };
+            });
+
+            // 갱신 구분 드롭다운 변경 시 실시간 반영
+            document.querySelectorAll("#renewalBody .renew-type-select").forEach(sel => {
+                sel.addEventListener("change", e => {
+                    const row = e.target.closest("tr");
+                    const id = row.dataset.id;
+                    const target = data.find(d => d.id === id);
+                    if (target) target.renewType = e.target.value;
+                });
             });
         }
 
+
+        // 필터링 로직
         function filterRenewal() {
             const id = document.getElementById("filterId")?.value.trim() || "";
             const company = document.getElementById("filterCompany")?.value.trim() || "";
+            const renewType = document.getElementById("filterRenewType")?.value.trim() || "";
             const nDays = parseInt(document.getElementById("filterDays")?.value);
             const status = document.getElementById("filterStatus")?.value || "";
             const now = new Date();
+
             return data.filter(r => {
                 if (id && !r.id.includes(id)) return false;
                 if (company && !r.company.includes(company)) return false;
+                if (renewType && r.renewType?.trim() !== renewType) return false;
                 if (!isNaN(nDays)) {
                     const d = new Date(r.expire);
                     const diff = Math.ceil((d - now) / (1000 * 60 * 60 * 24));
@@ -494,8 +552,24 @@ WHERE company_id='${id}';`);
             });
         }
 
-        document.getElementById("btnSearch")?.addEventListener("click", () => renderRenewal(filterRenewal()));
-        document.getElementById("btnReset")?.addEventListener("click", () => {
+        // 보증보험 관리 탭 검색 버튼
+        document.getElementById("btnSearchRenewal").addEventListener("click", () => {
+            const filtered = filterRenewal();
+            console.log("검색 결과:", filtered);
+            renderRenewal(filtered);
+        });
+
+        // 보정보험 관리 탭 초기화 버튼
+        document.getElementById("btnResetRenewal").addEventListener("click", () => {
+            ["filterId", "filterCompany", "filterDays", "filterStatus", "filterRenewType"].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = "";
+            });
+            renderRenewal(data);
+        });
+
+        // 금액 모니터링 초기화 버튼
+        document.getElementById("btnResetMonitor")?.addEventListener("click", () => {
             ["filterId", "filterCompany", "filterDays", "filterStatus"].forEach(id => {
                 if (document.getElementById(id)) document.getElementById(id).value = "";
             });
@@ -503,16 +577,42 @@ WHERE company_id='${id}';`);
         });
         renderRenewal(data);
 
-        // ⬇️ 직전 3개월 청구액 정렬 기능
+        // 직전 3개월 청구액 정렬 기능
         document.querySelector("#renewalTable thead th:nth-child(7)")?.addEventListener("click", () => {
             renewalSortAsc = !renewalSortAsc;
             const sorted = [...data].sort((a, b) => renewalSortAsc ? a.billing - b.billing : b.billing - a.billing);
             renderRenewal(sorted);
         });
 
-        /* -----------------------------
-        템플릿 추가 모달 로직
-        ----------------------------- */
+        // 체크박스 전체 선택 및 선택 메일 발송
+        document.addEventListener("change", e => {
+            if (e.target.id === "chkAll") {
+                document.querySelectorAll("#renewalBody .row-check").forEach(cb => {
+                    cb.checked = e.target.checked;
+                });
+            }
+        });
+
+        // 선택 메일 발송 버튼
+        document.getElementById("btnSendSelected").addEventListener("click", () => {
+            const selected = [...document.querySelectorAll("#renewalBody .row-check:checked")];
+            if (selected.length === 0) return alert("메일 발송할 고객사를 선택하세요.");
+
+            const ids = selected.map(cb => cb.closest("tr").dataset.id);
+            console.log(`선택된 고객사: ${ids.join(", ")}`);
+
+            // 실제 발송 로직 대신 콘솔 출력
+            ids.forEach(id => {
+                console.log(`메일 발송 요청 → 고객ID: ${id}`);
+            });
+
+            alert(`${ids.length}건의 메일 발송이 요청되었습니다.`);
+
+            // 메일 발송 후 체크박스 선택 해제
+            selected.forEach(cb => cb.checked = false);
+        });
+
+        /* 템플릿 추가 모달 로직 */
         const btnAddTpl = document.getElementById("btnAddTpl");
         const dlgAddTpl = document.getElementById("dlgAddTpl");
         const mailForm = document.getElementById("tplMailForm");
@@ -641,27 +741,6 @@ WHERE company_id='${id}';`);
                 });
             });
         }
-
-
-        //         function renderTemplateDashboard() {
-        //             const list = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
-        //             if (!list.length) {
-        //                 templateBody.innerHTML = `<tr><td colspan="5">등록된 템플릿이 없습니다.</td></tr>`;
-        //                 return;
-        //             }
-
-        //             templateBody.innerHTML = list.map((t, i) => `
-        //     <tr data-idx="${i}">
-        //       <td>${t.type === "mail" ? "메일" : "알림톡"}</td>
-        //       <td>${t.type === "mail" ? t.mail_title : t.alim_code}</td>
-        //       <td style="max-width: 400px;">${t.type === "mail" ? t.mail_body : t.alim_body}</td>
-        //       <td><button class="edit-btn">수정</button></td>
-        //       <td><button class="delete-btn">삭제</button></td>
-        //     </tr>
-        //   `).join("");
-
-        //             bindTemplateEvents();
-        //         }
 
         function bindTemplateEvents() {
             // 활성화 토글
