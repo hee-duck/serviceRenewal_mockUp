@@ -74,6 +74,13 @@
             <input type="text" id="filterId" placeholder="고객 아이디">
             <input type="text" id="filterCompany" placeholder="회사명">
             <input type="number" id="filterDays" placeholder="만료일 N일 전" min="1" style="width:130px;">
+            <!-- 실제는 bms 계정 상태값 가져와야 함 -->
+            <select id="filterBmsStatus">
+                <option value="">BMS 계약상태(전체)</option>
+                <option value="서비스중">서비스중</option>
+                <option value="계약해지">계약해지</option>
+                <option value="테스트중">테스트중</option>
+            </select>
             <select id="filterRenewType">
                 <option value="">갱신 구분(전체)</option>
                 <option value="서비스">서비스</option>
@@ -121,6 +128,7 @@
                     <th><input type="checkbox" id="chkAll"></th>
                     <th>고객 아이디</th>
                     <th>회사명</th>
+                    <th>계약 상태</th>
                     <th>갱신 구분</th>
                     <th>증권번호</th>
                     <th>보증보험 기간</th>
@@ -419,20 +427,22 @@ WHERE company_id='${id}';`);
         const months = [curMonth - 3, curMonth - 2, curMonth - 1].map(m => (m <= 0 ? m + 12 : m));
         const monthLabel = months.map(m => `${m}월`).join(", ");
 
-        // 테이블 헤더 업데이트
-        document.querySelector("#renewalTable thead th:nth-child(7)").innerText = `▲▼ 직전 3개월 청구액 (${monthLabel})`;
-
+        // 테이블 헤더 업데이트 "직전 3개월 청구액"은 현재 10번째
+        const headerCell = document.querySelector("#renewalTable thead th:nth-child(10)");
+        if (headerCell) {
+            headerCell.innerHTML = `▲▼ 직전 3개월 청구액<br>(${monthLabel})`;
+        }
         // 샘플 더미 데이터
         const data = [
             {
-                id: "frisbee", company: "프리스비", renewType: "서비스",
+                id: "frisbee", company: "프리스비", bmsStatus: "서비스중", renewType: "서비스",
                 policy: "2024-0544-5990", term: "2024.12.05 ~ 2025.12.04", expire: "2025-12-04",
                 amount: 3000000, billing: 5120000,
                 mail1: "2025-10-12 09:00", alim1: "2025-10-12 09:01",
                 mail2: "-", alim2: "-", status: "1차 완료", memo: "서류 대기 중"
             },
             {
-                id: "livlogi", company: "리브로지", renewType: "보험",
+                id: "livlogi", company: "리브로지", bmsStatus: "계약해지", renewType: "보험",
                 policy: "2024-0517-3794", term: "2024.11.25 ~ 2025.11.26", expire: "2025-11-26",
                 amount: 3000000, billing: 1520000,
                 mail1: "2025-09-30 09:00", alim1: "2025-09-30 09:01",
@@ -440,7 +450,7 @@ WHERE company_id='${id}';`);
                 status: "갱신 완료", memo: "확인 완료"
             },
             {
-                id: "ysml626", company: "와이에스", renewType: "서비스",
+                id: "ysml626", company: "와이에스", bmsStatus: "테스트중", renewType: "서비스",
                 policy: "2024-0533-2690", term: "2024.10.15 ~ 2025.10.15", expire: "2025-10-15",
                 amount: 3000000, billing: 2750000,
                 mail1: "-", alim1: "-", mail2: "-", alim2: "-",
@@ -459,6 +469,7 @@ WHERE company_id='${id}';`);
         <td><input type="checkbox" class="row-check"></td>
         <td>${r.id}</td>
         <td>${r.company}</td>
+        <td>${r.bmsStatus}</td>
         <td>
           <select class="renew-type-select">
             <option value="서비스" ${r.renewType === "서비스" ? "selected" : ""}>서비스</option>
@@ -529,10 +540,11 @@ WHERE company_id='${id}';`);
         }
 
 
-        // 필터링 로직
+        // 보증보험 관리 탭 검색 필터링 로직
         function filterRenewal() {
             const id = document.getElementById("filterId")?.value.trim() || "";
             const company = document.getElementById("filterCompany")?.value.trim() || "";
+            const bmsStatus = document.getElementById("filterBmsStatus")?.value.trim() || "";
             const renewType = document.getElementById("filterRenewType")?.value.trim() || "";
             const nDays = parseInt(document.getElementById("filterDays")?.value);
             const status = document.getElementById("filterStatus")?.value || "";
@@ -541,6 +553,7 @@ WHERE company_id='${id}';`);
             return data.filter(r => {
                 if (id && !r.id.includes(id)) return false;
                 if (company && !r.company.includes(company)) return false;
+                if (bmsStatus && r.bmsStatus?.trim() !== bmsStatus) return false;
                 if (renewType && r.renewType?.trim() !== renewType) return false;
                 if (!isNaN(nDays)) {
                     const d = new Date(r.expire);
@@ -561,7 +574,7 @@ WHERE company_id='${id}';`);
 
         // 보정보험 관리 탭 초기화 버튼
         document.getElementById("btnResetRenewal").addEventListener("click", () => {
-            ["filterId", "filterCompany", "filterDays", "filterStatus", "filterRenewType"].forEach(id => {
+            ["filterId", "filterCompany", "filterDays", "filterStatus", "filterRenewType", "filterBmsStatus"].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.value = "";
             });
@@ -578,7 +591,7 @@ WHERE company_id='${id}';`);
         renderRenewal(data);
 
         // 직전 3개월 청구액 정렬 기능
-        document.querySelector("#renewalTable thead th:nth-child(7)")?.addEventListener("click", () => {
+        document.querySelector("#renewalTable thead th:nth-child(10)")?.addEventListener("click", () => {
             renewalSortAsc = !renewalSortAsc;
             const sorted = [...data].sort((a, b) => renewalSortAsc ? a.billing - b.billing : b.billing - a.billing);
             renderRenewal(sorted);
