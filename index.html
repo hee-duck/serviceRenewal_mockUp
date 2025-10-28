@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="ko">
+<!-- 수정 필요 항목 -->
+<!-- 템플릿 관리 랜더링 시 전체보기 버튼 미액션 수정 필요 -->
+<!-- 템플릿 추가/수정 시 알림톡 변수를 리스트로 불러오고 변수 값을 엑셀에 업로드할 수 있도록 구현 필요 -->
+<head>
+    <meta charset="UTF-8">
+    <title>이행보증보험 관리</title>
+    <style>
+        :root {
+            --bg: #f7f8fb;
+            --line: #e5e7eb;
+            --ink: #111827;
+            --muted: #6b7280;
+            --primary: #2563eb;
+            --accent: #10b981;
+            --warn: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: "Noto Sans KR", sans-serif;
+            margin: 0;
+            background: var(--bg);
+            color: var(--ink);
+        }
+
+        header {
+            background: #1f2937;
+            color: white;
+            padding: 14px 18px;
+        }
+
+        header h1 {
+            font-size: 16px;
+            margin: 0;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 6px;
+            padding: 12px 18px;
+            background: white;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .tabs button {
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: #fff;
+            padding: 8px 14px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .tabs button.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        section.card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 16px;
+            margin: 16px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, .1);
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+
+        .toolbar input,
+        .toolbar select {
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 6px 10px;
+            height: 32px;
+            font-size: 13px;
+        }
+
+        .toolbar button {
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: #fff;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .toolbar button.primary {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        table.grid {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .grid th,
+        .grid td {
+            padding: 8px;
+            border-bottom: 1px solid var(--line);
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        .grid th {
+            background: #f3f4f6;
+        }
+
+        tr.highlight {
+            background: #fff7ed;
+        }
+
+        .status {
+            padding: 3px 8px;
+            border-radius: 8px;
+            font-size: 12px;
+            display: inline-block;
+        }
+
+        .status.ok {
+            background: #ecfdf5;
+            color: #065f46;
+        }
+
+        .status.warn {
+            background: #fffbeb;
+            color: #92400e;
+        }
+
+        .status.danger {
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* 모달 공통 */
+        dialog {
+            border: none;
+            border-radius: 10px;
+            padding: 0;
+            width: min(900px, 95vw);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .3);
+        }
+
+        .modal header {
+            background: #111827;
+            color: white;
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .modal header h3 {
+            margin: 0;
+            font-size: 15px;
+        }
+
+        .modal .body {
+            padding: 14px;
+            max-height: 65vh;
+            overflow: auto;
+        }
+
+        .modal .footer {
+            padding: 10px 14px;
+            text-align: right;
+            background: #fafafa;
+            border-top: 1px solid var(--line);
+            border-radius: 0 0 10px 10px;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .tab-buttons button {
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: #fff;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .tab-buttons button.active {
+            background: #eef2ff;
+            border-color: #c7d2fe;
+            color: #111827;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .form-row .label {
+            color: var(--muted);
+        }
+
+        select.action-select {
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: #fff;
+            padding: 4px 6px;
+            font-size: 12px;
+        }
+
+        textarea.memo-edit:focus {
+            outline: 1px solid var(--primary);
+            background: #f9fafb;
+        }
+
+        textarea {
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 8px;
+            resize: vertical;
+        }
+
+        .save-btn {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .save-btn:hover {
+            background: #0ea76b;
+        }
+
+        /* 템플릿 추가 모달 전용 스타일 */
+        #dlgAddTpl .form-row.radio-group {
+            display: flex !important;
+            /* grid 속성 덮어쓰기 */
+            align-items: center;
+            gap: 20px;
+        }
+
+        #dlgAddTpl .form-row.radio-group .label {
+            width: 60px;
+            color: var(--muted);
+        }
+
+        #dlgAddTpl .form-row.radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        /* Toggle Switch (활성화 토글) */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        /* 기본 배경 */
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #d1d5db;
+            /* 비활성 회색 */
+            transition: 0.3s;
+            border-radius: 34px;
+        }
+
+        /* 동그라미 */
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+            box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 템플릿 활성 상태 (파란색 테마) */
+        .switch input:checked+.slider {
+            background-color: #2563eb;
+        }
+
+        /* 템플릿 활성 시 동그라미 이동 */
+        .switch input:checked+.slider:before {
+            transform: translateX(20px);
+        }
+
+        /* Hover 효과 */
+        .slider:hover {
+            box-shadow: 0 0 4px rgba(37, 99, 235, 0.3);
+        }
+
+        /* 활성화된 템플릿 행 강조 */
+        tr.active-template {
+            background-color: #e0f2fe;
+            /* 연한 하늘색 */
+        }
+
+        tr.active-template:hover {
+            background-color: #bae6fd;
+            /* hover 시 조금 진하게 */
+        }
+
+        /* 템플릿 관리 메일 에디터 스타일 */
+        .editor {
+            font-family: "Noto Sans KR", sans-serif;
+            font-size: 14px;
+            line-height: 1.6;
+            outline: none;
+        }
+
+        .editor:focus {
+            border-color: var(--primary);
+            background: #f9fafb;
+        }
+
+        .toolbar-mini {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .toolbar-mini button {
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .toolbar-mini button:hover {
+            background: #e5e7eb;
+        }
+
+        /* 템플릿 수정 모달 */
+        #dlgEditTpl #editMailBody {
+            width: calc(100% - 20px);
+            /* 모달 내부 전체폭 - 여백 */
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* "메일 본문" 라벨을 한 줄 위로 빼서 전체 폭을 차지하게 */
+        #dlgEditTpl .form-row.mail-body-row {
+            display: block;
+            /* grid 대신 block으로 변환 */
+        }
+
+        #dlgEditTpl .form-row.mail-body-row .label {
+            display: block;
+            margin-bottom: 6px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>이행보증보험 관리</h1>
+    </header>
+
+    <!-- 탭 -->
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="monitor">① 금액 모니터링 (실시간)</button>
+        <button class="tab-btn" data-tab="renewal">② 보증보험 관리 (비실시간)</button>
+        <button class="tab-btn" data-tab="template">③ 템플릿 관리 (공용)</button>
+    </div>
+
+    <!-- 금액 모니터링 탭 -->
+    <section class="card tab-content" id="tab-monitor">
+        <!-- 검색 툴바 -->
+        <div class="toolbar">
+            <input id="filterId" type="text" placeholder="고객 아이디">
+            <input id="filterCompany" type="text" placeholder="회사명">
+            <input id="filterRate" type="number" placeholder="초과율 N% 이상" min="0" style="width:120px;">
+            <select id="filterStatus">
+                <option value="">상태(전체)</option>
+                <option value="ok">정상</option>
+                <option value="warn">80% 도달</option>
+                <option value="danger">초과</option>
+            </select>
+            <select id="filterAction">
+                <option value="">조치 결과(전체)</option>
+                <option>미조치</option>
+                <option>증액 요청 중</option>
+                <option>조치 완료</option>
+            </select>
+            <button id="btnSelectTplMonitor">활성 템플릿 선택</button>
+            <span id="monitorBadge" style="margin-left:10px;"></span>
+            <button class="primary" id="btnSearch">검색</button>
+            <button id="btnReset">초기화</button>
+        </div>
+
+        <table class="grid" id="monitorTable">
+            <thead>
+                <tr>
+                    <th>고객 아이디</th>
+                    <th>회사명</th>
+                    <th>보증보험 금액</th>
+                    <th>당월 청구액▲▼</th>
+                    <th>초과율(%)</th>
+                    <th>상태</th>
+                    <th>고객 알림일시</th>
+                    <th>내부 알림일시</th>
+                    <th>조치 결과</th>
+                    <th>메모</th>
+                    <th>저장</th>
+                </tr>
+            </thead>
+            <tbody id="monitorBody"></tbody>
+        </table>
+    </section>
+
+    <!-- 보증보험 관리 탭 -->
+    <section class="card tab-content hidden" id="tab-renewal">
+        <!-- 검색 툴바 -->
+        <div class="toolbar">
+            <input type="text" id="filterId" placeholder="고객 아이디">
+            <input type="text" id="filterCompany" placeholder="회사명">
+            <input type="number" id="filterDays" placeholder="만료일 N일 전" min="1" style="width:130px;">
+            <select id="filterMail1">
+                <option value="">1차 메일(전체)</option>
+                <option value="Y">발송 완료</option>
+                <option value="N">미발송</option>
+            </select>
+            <select id="filterAlim1">
+                <option value="">1차 알림톡(전체)</option>
+                <option value="Y">발송 완료</option>
+                <option value="N">미발송</option>
+            </select>
+            <select id="filterMail2">
+                <option value="">2차 메일(전체)</option>
+                <option value="Y">발송 완료</option>
+                <option value="N">미발송</option>
+            </select>
+            <select id="filterAlim2">
+                <option value="">2차 알림톡(전체)</option>
+                <option value="Y">발송 완료</option>
+                <option value="N">미발송</option>
+            </select>
+            <select id="filterStatus">
+                <option value="">처리현황(전체)</option>
+                <option>대기</option>
+                <option>1차 완료</option>
+                <option>2차 완료</option>
+                <option>갱신 완료</option>
+                <option>보류</option>
+            </select>
+            <button id="btnSelectTplRenewal">활성 템플릿 선택</button>
+            <span id="renewalBadge" style="margin-left:10px;"></span>
+            <button class="primary" id="btnSearch">검색</button>
+            <button id="btnReset">초기화</button>
+        </div>
+
+        <!-- 목록 -->
+        <table class="grid" id="renewalTable">
+            <thead>
+                <tr>
+                    <th>고객 아이디</th>
+                    <th>회사명</th>
+                    <th>증권번호</th>
+                    <th>보증보험 기간</th>
+                    <th>보증보험 만료일</th>
+                    <th>보증보험 금액</th>
+                    <th>직전 3개월 청구액</th>
+                    <th>1차 안내(메일)</th>
+                    <th>1차 안내(알림톡)</th>
+                    <th>2차 안내(메일)</th>
+                    <th>2차 안내(알림톡)</th>
+                    <th>처리현황</th>
+                    <th>메모</th>
+                    <th>저장</th>
+                </tr>
+            </thead>
+            <tbody id="renewalBody"></tbody>
+        </table>
+    </section>
+
+    <!-- 템플릿 관리 탭 -->
+    <section class="card tab-content hidden" id="tab-template">
+        <h3>템플릿 관리</h3>
+        <table class="grid" id="templateTable">
+            <thead>
+                <tr>
+                    <th>구분</th>
+                    <th>제목</th>
+                    <th>본문</th>
+                    <th>수정</th>
+                    <th>삭제</th>
+                </tr>
+            </thead>
+            <tbody id="templateBody"></tbody>
+        </table>
+        <button id="btnAddTpl" class="primary">템플릿 추가</button>
+    </section>
+
+    <!-- 템플릿 상세 모달 -->
+    <dialog id="dlgTemplateDetail">
+        <div class="modal">
+            <header>
+                <h3>템플릿 등록 / 수정</h3>
+                <button onclick="dlgTemplateDetail.close()">닫기</button>
+            </header>
+            <div class="body">
+                <div class="form-row">
+                    <div class="label">구분</div>
+                    <select id="tplCategory">
+                        <option value="monitor_1st">금액 모니터링 - 1차</option>
+                        <option value="monitor_2nd">금액 모니터링 - 2차</option>
+                        <option value="renewal_1st">보증보험 관리 - 1차</option>
+                        <option value="renewal_2nd">보증보험 관리 - 2차</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="label">유형</div>
+                    <select id="tplType">
+                        <option value="mail">메일</option>
+                        <option value="alim">알림톡</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="label">템플릿명</div>
+                    <input id="tplName" type="text" placeholder="템플릿명을 입력하세요">
+                </div>
+
+                <div id="tplMailFields">
+                    <div class="form-row">
+                        <div class="label">메일 제목</div>
+                        <input id="tplMailTitle" type="text" placeholder="메일 제목">
+                    </div>
+                    <div class="form-row">
+                        <div class="label">메일 본문</div>
+                        <textarea id="tplMailBody" rows="5" placeholder="메일 본문"></textarea>
+                    </div>
+                </div>
+
+                <div id="tplAlimFields" class="hidden">
+                    <div class="form-row">
+                        <div class="label">알림톡 코드</div>
+                        <input id="tplAlimCode" type="text" placeholder="카카오 알림톡 템플릿 코드">
+                    </div>
+                    <div class="form-row">
+                        <div class="label">설명</div>
+                        <textarea id="tplAlimDesc" rows="3" placeholder="알림톡 설명"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <label><input type="checkbox" id="tplActive"> 활성화</label>
+                </div>
+            </div>
+
+            <div class="footer">
+                <button class="save-btn" id="btnTplSave">저장</button>
+                <button onclick="dlgTemplateDetail.close()">닫기</button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- 활성 템플릿 선택 모달 -->
+    <dialog id="dlgSelectTpl">
+        <div class="modal">
+            <header>
+                <h3>공용 템플릿 선택</h3>
+                <button onclick="dlgSelectTpl.close()">닫기</button>
+            </header>
+            <div class="body">
+                <table class="grid">
+                    <thead>
+                        <tr>
+                            <th>구분</th>
+                            <th>제목</th>
+                            <th>본문</th>
+                            <th>선택</th>
+                        </tr>
+                    </thead>
+                    <tbody id="selectTplBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </dialog>
+
+    <!--  템플릿 추가 모달 -->
+    <dialog id="dlgAddTpl">
+        <div class="modal">
+            <header>
+                <h3>템플릿 추가</h3>
+                <button onclick="dlgAddTpl.close()">닫기</button>
+            </header>
+            <div class="body">
+                <div class="form-row radio-group">
+                    <div class="label">구분</div>
+                    <label><input type="radio" name="tplTypeRadio" value="mail"> 메일</label>
+                    <label><input type="radio" name="tplTypeRadio" value="alim" checked> 알림톡</label>
+                </div>
+
+                <!-- 메일 템플릿 폼 -->
+                <div id="tplMailForm">
+                    <div class="form-row">
+                        <div class="label">제목</div>
+                        <input type="text" id="tplMailTitleInput" placeholder="메일 제목을 입력하세요">
+                    </div>
+                    <!-- 메일 에디터 -->
+                    <div class="form-row">
+                        <div class="label"></div>
+                        <div class="toolbar-mini">
+                            <button type="button" onclick="formatText('bold')"><b>B</b></button>
+                            <button type="button" onclick="formatText('italic')"><i>I</i></button>
+                            <button type="button" onclick="formatText('underline')"><u>U</u></button>
+                            <button type="button" onclick="formatText('insertUnorderedList')">• 목록</button>
+                            <button type="button" onclick="formatText('createLink')">링크</button>
+                            <button type="button" id="btnTogglePreviewAdd">미리보기 전환</button>
+
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="label">내용</div>
+                        <div id="tplMailBodyEditor" class="editor" contenteditable="true"
+                            style="border:1px solid #e5e7eb; border-radius:6px; min-height:160px; padding:8px; background:#fff;">
+                            <p>메일 본문 내용을 입력하세요.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 알림톡 템플릿 폼 -->
+                <div id="tplAlimForm" class="hidden">
+                    <div class="form-row">
+                        <div class="label">템플릿 코드</div>
+                        <input type="text" id="tplAlimCodeInput" placeholder="카카오 알림톡 템플릿 코드">
+                    </div>
+                    <div class="form-row">
+                        <div class="label">미리보기</div>
+                        <button id="btnPreviewAlim">DB에서 템플릿 조회 → 본문 불러오기</button>
+                    </div>
+                    <textarea id="tplAlimBodyPreview" rows="6" placeholder="불러온 템플릿 본문" readonly></textarea>
+                </div>
+            </div>
+
+            <div class="footer">
+                <button class="save-btn" id="btnAddTplConfirm">추가하기</button>
+            </div>
+        </div>
+    </dialog>
+
+    <script>
+        let monitorSortAsc = true;   // 금액 모니터링 탭 정렬 방향
+        let renewalSortAsc = true;   // 보증보험 관리 탭 정렬 방향
+
+        /* 공통: 탭/모달 전환 */
+        const tabs = document.querySelectorAll(".tab-btn");
+        const contents = document.querySelectorAll(".tab-content");
+        tabs.forEach(btn => {
+            btn.addEventListener("click", () => {
+                tabs.forEach(b => b.classList.remove("active"));
+                contents.forEach(c => c.classList.add("hidden"));
+                btn.classList.add("active");
+                document.getElementById("tab-" + btn.dataset.tab).classList.remove("hidden");
+            });
+        });
+
+        /* 1) 금액 모니터링 탭 */
+        const rows = [
+            { id: "a2m_innopolis", company: "에이엠이노폴리스", amount: 3000000, billing: 2450000, rate: 81.7, status: "warn", alert_c: "2025-10-13 09:15", alert_i: "2025-10-13 09:16", action: "증액 요청 중", memo: "보험 증액 검토 중" },
+            { id: "hansunginst", company: "한성계기", amount: 3000000, billing: 3400000, rate: 113, status: "danger", alert_c: "2025-10-12 10:03", alert_i: "2025-10-12 10:03", action: "조치 완료", memo: "담당자 연락 완료" },
+            { id: "livlogi", company: "리브로지", amount: 3000000, billing: 1800000, rate: 60, status: "ok", alert_c: "-", alert_i: "-", action: "미조치", memo: "" },
+            { id: "biztalk_demo", company: "비즈톡테스트", amount: 2500000, billing: 2100000, rate: 84, status: "warn", alert_c: "2025-10-13 09:10", alert_i: "2025-10-13 09:11", action: "증액 요청 중", memo: "고객 회신 대기" },
+            { id: "sejongit", company: "세종아이티", amount: 5000000, billing: 5800000, rate: 116, status: "danger", alert_c: "2025-10-13 09:30", alert_i: "2025-10-13 09:31", action: "조치 필요", memo: "내부 확인 요청됨" },
+            { id: "blendedlab", company: "블렌디드랩", amount: 2000000, billing: 1400000, rate: 70, status: "ok", alert_c: "-", alert_i: "-", action: "미조치", memo: "" }
+        ];
+        const tbody = document.getElementById("monitorBody");
+
+        function renderMonitor(data) {
+            tbody.innerHTML = "";
+            data.forEach(r => {
+                tbody.innerHTML += `
+      <tr data-id="${r.id}">
+        <td>${r.id}</td>
+        <td>${r.company}</td>
+        <td>${r.amount.toLocaleString()}</td>
+        <td>${r.billing.toLocaleString()}</td>
+        <td>${r.rate}%</td>
+        <td><span class="status ${r.status}">${r.status === "ok" ? "정상" : r.status === "warn" ? "80% 도달" : "초과"}</span></td>
+        <td>${r.alert_c}</td>
+        <td>${r.alert_i}</td>
+        <td>
+          <select class="action-select">
+            <option ${r.action === "미조치" ? "selected" : ""}>미조치</option>
+            <option ${r.action === "증액 요청 중" ? "selected" : ""}>증액 요청 중</option>
+            <option ${r.action === "조치 완료" ? "selected" : ""}>조치 완료</option>
+          </select>
+        </td>
+        <td><textarea class="memo-edit">${r.memo || ""}</textarea></td>
+        <td><button class="save-btn">저장</button></td>
+      </tr>`;
+            });
+            bindSaveMonitor();
+        }
+
+        function bindSaveMonitor() {
+            document.querySelectorAll(".save-btn").forEach(btn => {
+                btn.onclick = e => {
+                    const row = e.target.closest("tr");
+                    const id = row.dataset.id;
+                    const action = row.querySelector(".action-select").value;
+                    const memo = row.querySelector(".memo-edit").value.trim();
+                    console.log(`UPDATE insurance_monitoring 
+SET action_result='${action}', memo='${memo}', updated_at=NOW() 
+WHERE company_id='${id}';`);
+                    alert(`저장 완료 (고객ID: ${id})`);
+                };
+            });
+        }
+
+        function filterMonitor() {
+            const idVal = document.getElementById("filterId").value.toLowerCase();
+            const companyVal = document.getElementById("filterCompany").value;
+            const rateVal = parseFloat(document.getElementById("filterRate").value);
+            const statusVal = document.getElementById("filterStatus").value;
+            const actionVal = document.getElementById("filterAction").value;
+
+            return rows.filter(r => {
+                if (idVal && !r.id.toLowerCase().includes(idVal)) return false;
+                if (companyVal && !r.company.includes(companyVal)) return false;
+                if (!isNaN(rateVal) && r.rate < rateVal) return false;
+                if (statusVal && r.status !== statusVal) return false;
+                if (actionVal && r.action !== actionVal) return false;
+                return true;
+            });
+        }
+
+        document.getElementById("btnSearch").onclick = () => renderMonitor(filterMonitor());
+        document.getElementById("btnReset").onclick = () => {
+            ["filterId", "filterCompany", "filterRate"].forEach(id => document.getElementById(id).value = "");
+            ["filterStatus", "filterAction"].forEach(id => document.getElementById(id).value = "");
+            renderMonitor(rows);
+        };
+        renderMonitor(rows);
+
+        // 당월 청구액 정렬 기능 추가
+        document.querySelector("#monitorTable thead th:nth-child(4)")?.addEventListener("click", () => {
+            monitorSortAsc = !monitorSortAsc;
+            const sorted = [...rows].sort((a, b) => monitorSortAsc ? a.billing - b.billing : b.billing - a.billing);
+            renderMonitor(sorted);
+        });
+
+        /* (2) 보증보험 관리 탭 로직 */
+
+        // 직전 3개월 계산용 월 범위 라벨 (예: 10월 → 7,8,9월)
+        const now = new Date();
+        const curMonth = now.getMonth() + 1; // JS는 0~11 반환
+        const months = [curMonth - 3, curMonth - 2, curMonth - 1].map(m => (m <= 0 ? m + 12 : m));
+        const monthLabel = months.map(m => `${m}월`).join(", ");
+
+        // 테이블 헤더 업데이트
+        document.querySelector("#renewalTable thead th:nth-child(7)").innerText = `▲▼ 직전 3개월 청구액 (${monthLabel})`;
+
+        const data = [
+            {
+                id: "frisbee", company: "프리스비", policy: "2024-0544-5990", term: "2024.12.05 ~ 2025.12.04", expire: "2025-12-04", amount: 3000000, billing: 5120000,
+                mail1: "2025-10-12 09:00", alim1: "2025-10-12 09:01", mail2: "-", alim2: "-", status: "1차 완료", memo: "서류 대기 중"
+            },
+            {
+                id: "livlogi", company: "리브로지", policy: "2024-0517-3794", term: "2024.11.25 ~ 2025.11.26", expire: "2025-11-26", amount: 3000000, billing: 1520000,
+                mail1: "2025-09-30 09:00", alim1: "2025-09-30 09:01", mail2: "2025-10-10 09:00", alim2: "2025-10-10 09:01", status: "갱신 완료", memo: "확인 완료"
+            },
+            {
+                id: "ysml626", company: "와이에스", policy: "2024-0533-2690", term: "2024.10.15 ~ 2025.10.15", expire: "2025-10-15", amount: 3000000, billing: 2750000,
+                mail1: "-", alim1: "-", mail2: "-", alim2: "-", status: "대기", memo: ""
+            }
+        ];
+
+        function renderRenewal(list) {
+            const body = document.getElementById("renewalBody");
+            if (!body) return; // 1번 탭에서 실행 안되도록 안전장치
+            body.innerHTML = "";
+            list.forEach(r => {
+                body.innerHTML += `
+      <tr data-id="${r.id}">
+        <td>${r.id}</td>
+        <td>${r.company}</td>
+        <td>${r.policy}</td>
+        <td>${r.term}</td>
+        <td>${r.expire}</td>
+        <td>${r.amount.toLocaleString()}</td>
+        <td>${r.billing.toLocaleString()}</td>
+        <td>${r.mail1}</td>
+        <td>${r.alim1}</td>
+        <td>${r.mail2}</td>
+        <td>${r.alim2}</td>
+        <td>
+          <select class="status-select">
+            <option ${r.status === "대기" ? "selected" : ""}>대기</option>
+            <option ${r.status === "1차 완료" ? "selected" : ""}>1차 완료</option>
+            <option ${r.status === "2차 완료" ? "selected" : ""}>2차 완료</option>
+            <option ${r.status === "갱신 완료" ? "selected" : ""}>갱신 완료</option>
+            <option ${r.status === "보류" ? "selected" : ""}>보류</option>
+          </select>
+        </td>
+        <td><textarea class="memo">${r.memo || ""}</textarea></td>
+        <td><button class="save-btn">저장</button></td>
+      </tr>`;
+            });
+            bindSaveRenewal();
+        }
+
+        function bindSaveRenewal() {
+            document.querySelectorAll("#renewalBody .save-btn").forEach(btn => {
+                btn.onclick = e => {
+                    const row = e.target.closest("tr");
+                    const id = row.dataset.id;
+                    const status = row.querySelector(".status-select").value;
+                    const memo = row.querySelector(".memo").value.trim();
+                    console.log(`UPDATE insurance_renewal 
+SET status='${status}', memo='${memo}', updated_at=NOW() 
+WHERE company_id='${id}';`);
+                    alert(`보증보험 관리 저장 완료 (고객ID: ${id})`);
+                };
+            });
+        }
+
+        function filterRenewal() {
+            const id = document.getElementById("filterId")?.value.trim() || "";
+            const company = document.getElementById("filterCompany")?.value.trim() || "";
+            const nDays = parseInt(document.getElementById("filterDays")?.value);
+            const status = document.getElementById("filterStatus")?.value || "";
+            const now = new Date();
+            return data.filter(r => {
+                if (id && !r.id.includes(id)) return false;
+                if (company && !r.company.includes(company)) return false;
+                if (!isNaN(nDays)) {
+                    const d = new Date(r.expire);
+                    const diff = Math.ceil((d - now) / (1000 * 60 * 60 * 24));
+                    if (diff !== nDays) return false;
+                }
+                if (status && r.status !== status) return false;
+                return true;
+            });
+        }
+
+        document.getElementById("btnSearch")?.addEventListener("click", () => renderRenewal(filterRenewal()));
+        document.getElementById("btnReset")?.addEventListener("click", () => {
+            ["filterId", "filterCompany", "filterDays", "filterStatus"].forEach(id => {
+                if (document.getElementById(id)) document.getElementById(id).value = "";
+            });
+            renderRenewal(data);
+        });
+        renderRenewal(data);
+
+        // ⬇️ 직전 3개월 청구액 정렬 기능
+        document.querySelector("#renewalTable thead th:nth-child(7)")?.addEventListener("click", () => {
+            renewalSortAsc = !renewalSortAsc;
+            const sorted = [...data].sort((a, b) => renewalSortAsc ? a.billing - b.billing : b.billing - a.billing);
+            renderRenewal(sorted);
+        });
+
+        /* -----------------------------
+        템플릿 추가 모달 로직
+        ----------------------------- */
+        const btnAddTpl = document.getElementById("btnAddTpl");
+        const dlgAddTpl = document.getElementById("dlgAddTpl");
+        const mailForm = document.getElementById("tplMailForm");
+        const alimForm = document.getElementById("tplAlimForm");
+
+        // 라디오 전환
+        document.querySelectorAll("input[name='tplTypeRadio']").forEach(r => {
+            r.addEventListener("change", e => {
+                if (e.target.value === "mail") {
+                    mailForm.classList.remove("hidden");
+                    alimForm.classList.add("hidden");
+                } else {
+                    mailForm.classList.add("hidden");
+                    alimForm.classList.remove("hidden");
+                }
+            });
+        });
+
+        // 버튼 클릭 → 모달 열기
+        btnAddTpl.addEventListener("click", () => {
+            dlgAddTpl.showModal();
+
+            // 현재 선택된 라디오값 확인
+            const selectedType = document.querySelector("input[name='tplTypeRadio']:checked")?.value;
+
+            // 메일/알림톡 폼 토글
+            if (selectedType === "mail") {
+                mailForm.classList.remove("hidden");
+                alimForm.classList.add("hidden");
+            } else {
+                mailForm.classList.add("hidden");
+                alimForm.classList.remove("hidden");
+            }
+        });
+
+        // 알림톡 미리보기 (DB 조회 가정)
+        document.getElementById("btnPreviewAlim").addEventListener("click", () => {
+            const code = document.getElementById("tplAlimCodeInput").value.trim();
+            if (!code) return alert("템플릿 코드를 입력하세요.");
+            // 실제 구현에서는 fetch()로 서버 조회. 여기선 예시 데이터 사용.
+            const sample = {
+                code,
+                body: `[${code}] 보험 만기 안내드립니다.\n제출 기한: 2025-10-22\n감사합니다.`
+            };
+            document.getElementById("tplAlimBodyPreview").value = sample.body;
+            alert("템플릿 본문이 불러와졌습니다.");
+        });
+
+        // 에디터 서식 버튼 기능
+        function formatText(command) {
+            if (command === "createLink") {
+                const url = prompt("링크 URL을 입력하세요:", "https://");
+                if (url) document.execCommand(command, false, url);
+            } else {
+                document.execCommand(command, false, null);
+            }
+        }
+
+        /* 템플릿 관리 대시보드 렌더링 */
+        const templateBody = document.getElementById("templateBody");
+
+        function renderTemplateDashboard() {
+            const list = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
+            if (!list.length) {
+                templateBody.innerHTML = `<tr><td colspan="5">등록된 템플릿이 없습니다.</td></tr>`;
+                return;
+            }
+
+            // HTML 태그 제거 후 문자열 자르기
+            const stripHtml = (html) => {
+                const tmp = document.createElement("div");
+                tmp.innerHTML = html;
+                return tmp.textContent || tmp.innerText || "";
+            };
+
+            // 목록 렌더링
+            templateBody.innerHTML = list
+                .map((t, i) => {
+                    const content = t.type === "mail" ? t.mail_body : t.alim_body;
+                    const text = stripHtml(content).trim().replace(/\s+/g, " ");
+                    const preview = text.length > 100 ? text.slice(0, 100) + "..." : text;
+
+                    return `
+        <tr data-idx="${i}">
+          <td>${t.type === "mail" ? "메일" : "알림톡"}</td>
+          <td>${t.type === "mail" ? t.mail_title : t.alim_code}</td>
+          <td style="max-width:400px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            ${preview}
+            ${text.length > 100 ? `<button class="view-btn" data-idx="${i}" style="margin-left:8px;">전체보기</button>` : ""}
+          </td>
+          <td><button class="edit-btn">수정</button></td>
+          <td><button class="delete-btn">삭제</button></td>
+        </tr>`;
+                })
+                .join("");
+
+            // 기존 수정/삭제 바인딩
+            bindTemplateEvents();
+
+            // ✅ 전체보기 버튼 클릭 이벤트는 별도 바인딩 (bindTemplateEvents() 뒤에 와야 함)
+            document.querySelectorAll(".view-btn").forEach((btn) => {
+                btn.addEventListener("click", (e) => {
+                    const idx = e.target.dataset.idx;
+                    const tpl = list[idx];
+                    if (!tpl) return alert("템플릿 정보를 찾을 수 없습니다.");
+
+                    // 모달 생성
+                    let dlg = document.getElementById("dlgViewTpl");
+                    if (!dlg) {
+                        dlg = document.createElement("dialog");
+                        dlg.id = "dlgViewTpl";
+                        document.body.appendChild(dlg);
+                    }
+
+                    dlg.innerHTML = `
+        <div style="max-width:900px;max-height:80vh;overflow:auto;padding:20px;background:#fff;border-radius:8px;">
+          <h3 style="margin-top:0;">${tpl.type === "mail" ? tpl.mail_title : tpl.alim_code}</h3>
+          <div style="border:1px solid #e5e7eb;padding:16px;margin-top:12px;">
+            ${tpl.type === "mail" ? tpl.mail_body : tpl.alim_body}
+          </div>
+          <div style="text-align:right;margin-top:12px;">
+            <button onclick="document.getElementById('dlgViewTpl').close()">닫기</button>
+          </div>
+        </div>`;
+                    dlg.showModal();
+                });
+            });
+        }
+
+
+        //         function renderTemplateDashboard() {
+        //             const list = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
+        //             if (!list.length) {
+        //                 templateBody.innerHTML = `<tr><td colspan="5">등록된 템플릿이 없습니다.</td></tr>`;
+        //                 return;
+        //             }
+
+        //             templateBody.innerHTML = list.map((t, i) => `
+        //     <tr data-idx="${i}">
+        //       <td>${t.type === "mail" ? "메일" : "알림톡"}</td>
+        //       <td>${t.type === "mail" ? t.mail_title : t.alim_code}</td>
+        //       <td style="max-width: 400px;">${t.type === "mail" ? t.mail_body : t.alim_body}</td>
+        //       <td><button class="edit-btn">수정</button></td>
+        //       <td><button class="delete-btn">삭제</button></td>
+        //     </tr>
+        //   `).join("");
+
+        //             bindTemplateEvents();
+        //         }
+
+        function bindTemplateEvents() {
+            // 활성화 토글
+            document.querySelectorAll(".tpl-active").forEach((cb, idx) => {
+                cb.addEventListener("change", (e) => {
+                    const list = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
+
+                    if (e.target.checked) {
+                        // ✅ 다른 모든 템플릿 비활성화, 현재만 활성화
+                        list.forEach((t, i) => t.is_active = i === idx);
+                    } else {
+                        // ✅ 마지막 활성템플릿은 비활성화 불가
+                        list[idx].is_active = false;
+                        const activeCount = list.filter(t => t.is_active).length;
+                        if (activeCount === 0) {
+                            alert("1개의 활성화 템플릿이 필요합니다.");
+                            list[idx].is_active = true; // 되돌리기
+                        }
+                    }
+
+                    localStorage.setItem("insurance_templates", JSON.stringify(list));
+                    renderTemplateDashboard();
+                });
+            });
+
+            // 수정 버튼
+            document.querySelectorAll(".edit-btn").forEach(btn => {
+                btn.addEventListener("click", (e) => {
+                    const idx = e.target.closest("tr").dataset.idx;
+                    openTemplateEditModal(idx);
+                });
+            });
+
+            // 삭제 버튼
+            document.querySelectorAll(".delete-btn").forEach(btn => {
+                btn.addEventListener("click", (e) => {
+                    const idx = parseInt(e.target.closest("tr").dataset.idx, 10);
+                    const list = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
+                    const tpl = list[idx];
+
+                    if (!tpl) return alert("템플릿 정보를 찾을 수 없습니다.");
+                    if (tpl.is_active) return alert("활성화된 템플릿은 삭제할 수 없습니다.");
+
+                    const confirmed = confirm("템플릿을 삭제하시겠습니까?");
+                    if (!confirmed) return;
+
+                    list.splice(idx, 1);
+                    localStorage.setItem("insurance_templates", JSON.stringify(list));
+                    alert("템플릿이 삭제되었습니다.");
+                    renderTemplateDashboard();
+                });
+            });
+        }
+
+        /* 수정 모달 */
+        function openTemplateEditModal(idx) {
+            const list = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
+            const tpl = list[idx];
+            if (!tpl) return alert("템플릿 정보를 찾을 수 없습니다.");
+
+            // 모달 생성 또는 가져오기
+            let dlg = document.getElementById("dlgEditTpl");
+            if (!dlg) {
+                dlg = document.createElement("dialog");
+                dlg.id = "dlgEditTpl";
+                dlg.innerHTML = `
+      <div class="modal">
+        <header>
+          <h3>템플릿 수정</h3>
+          <button onclick="dlgEditTpl.close()">닫기</button>
+        </header>
+        <div class="body" id="editTplBody"></div>
+        <div class="footer">
+          <button class="save-btn" id="btnTplUpdate">저장</button>
+          <button onclick="dlgEditTpl.close()">취소</button>
+        </div>
+      </div>`;
+                document.body.appendChild(dlg);
+            }
+
+            const body = dlg.querySelector("#editTplBody");
+
+            if (tpl.type === "mail") {
+                // 메일 에디터 (HTML 서식 유지)
+                body.innerHTML = `
+  <div class="form-row">
+    <div class="label">메일 제목</div>
+    <input id="editMailTitle" type="text" value="${tpl.mail_title}">
+  </div>
+  <div class="form-row mail-body-row">
+    <div class="label">메일 본문</div>
+    <div class="toolbar-mini">
+      <button type="button" onclick="formatText('bold')"><b>B</b></button>
+      <button type="button" onclick="formatText('italic')"><i>I</i></button>
+      <button type="button" onclick="formatText('underline')"><u>U</u></button>
+      <button type="button" onclick="formatText('insertUnorderedList')">• 목록</button>
+      <button type="button" onclick="formatText('createLink')">링크</button>
+      <button type="button" id="btnTogglePreviewEdit">미리보기 전환</button>
+    </div>
+    <div id="editMailBody" class="editor" contenteditable="true"
+      style="border:1px solid #e5e7eb; border-radius:6px; min-height:300px; padding:10px; background:#fff;">${tpl.mail_body}</div>
+  </div>`;
+
+            } else {
+                // 알림톡 수정 (일반 텍스트)
+                body.innerHTML = `
+      <div class="form-row">
+        <div class="label">템플릿 코드</div>
+        <input id="editAlimCode" type="text" value="${tpl.alim_code}">
+      </div>
+      <div class="form-row">
+        <div class="label">본문</div>
+        <textarea id="editAlimBody" rows="6">${tpl.alim_body}</textarea>
+      </div>`;
+            }
+
+            dlg.showModal();
+
+            // 템플릿 수정 모달 내 미리보기 버튼 이벤트
+            const previewBtn = document.getElementById("btnTogglePreviewEdit");
+            if (previewBtn) {
+                previewBtn.onclick = () => openPreviewDialog("editMailBody");
+            }
+
+            // 🔹 화면 높이에 맞춰 에디터 동적 크기 조정
+            const editor = dlg.querySelector(".editor");
+            if (editor) {
+                const vh = window.innerHeight;
+                const maxHeight = Math.min(500, vh * 0.6);
+                editor.style.minHeight = `${maxHeight}px`;
+            }
+
+            // 저장 버튼 이벤트
+            dlg.querySelector("#btnTplUpdate").onclick = () => {
+                if (tpl.type === "mail") {
+                    const newTitle = document.getElementById("editMailTitle").value.trim();
+                    const newBody = document.getElementById("editMailBody").innerHTML.trim();
+                    if (!newTitle || !newBody) return alert("제목과 본문을 모두 입력하세요.");
+                    tpl.mail_title = newTitle;
+                    tpl.mail_body = newBody;
+                } else {
+                    const newCode = document.getElementById("editAlimCode").value.trim();
+                    const newBody = document.getElementById("editAlimBody").value.trim();
+                    if (!newCode || !newBody) return alert("코드와 본문을 모두 입력하세요.");
+                    tpl.alim_code = newCode;
+                    tpl.alim_body = newBody;
+                }
+
+                list[idx] = tpl;
+                localStorage.setItem("insurance_templates", JSON.stringify(list));
+                dlg.close();
+                alert("템플릿이 수정되었습니다.");
+                renderTemplateDashboard();
+            };
+        }
+
+        /* 템플릿 추가 후 자동 반영 */
+        document.getElementById("btnAddTplConfirm").addEventListener("click", () => {
+            const type = document.querySelector("input[name='tplTypeRadio']:checked").value;
+            const templateList = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
+
+            if (type === "mail") {
+                const title = document.getElementById("tplMailTitleInput").value.trim();
+                const body = document.getElementById("tplMailBodyEditor").innerHTML.trim();
+                if (!title || !body) return alert("제목과 내용을 입력하세요.");
+                templateList.push({
+                    type, mail_title: title, mail_body: body, is_active: false
+                });
+            } else {
+                const code = document.getElementById("tplAlimCodeInput").value.trim();
+                const body = document.getElementById("tplAlimBodyPreview").value.trim();
+                if (!code || !body) return alert("템플릿 코드와 본문을 입력하세요.");
+                templateList.push({
+                    type, alim_code: code, alim_body: body, is_active: false
+                });
+            }
+
+            localStorage.setItem("insurance_templates", JSON.stringify(templateList));
+            alert("템플릿이 추가되었습니다.");
+            dlgAddTpl.close();
+            renderTemplateDashboard();
+        });
+
+        // HTML → 인코딩 (엔티티 변환)
+        function escapeHtml(html) {
+            return html
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // 템플릿 미리보기 토글
+        function togglePreview(editorId, buttonId) {
+            const editor = document.getElementById(editorId);
+            const btn = document.getElementById(buttonId);
+
+            if (!editor || !btn) return;
+
+            const isPreview = editor.dataset.preview === "true";
+
+            if (!isPreview) {
+                // 현재 에디터 모드 → 미리보기 전환
+                const html = editor.innerHTML;
+                editor.dataset.raw = html; // 원본 저장
+                editor.textContent = html; // 텍스트로 변환 (escape 효과)
+                editor.dataset.preview = "true";
+                editor.contentEditable = "false";
+                btn.textContent = "에디터 전환";
+                editor.style.background = "#f3f4f6";
+            } else {
+                // 미리보기 → 에디터 모드 복귀
+                const raw = editor.dataset.raw || editor.textContent;
+                editor.innerHTML = raw;
+                editor.dataset.preview = "false";
+                editor.contentEditable = "true";
+                btn.textContent = "미리보기 전환";
+                editor.style.background = "#fff";
+            }
+        }
+
+        // 템플릿 추가 모달 내 미리보기 버튼 이벤트
+        btnAddTpl.addEventListener("click", () => {
+            dlgAddTpl.showModal();
+            const previewBtn = document.getElementById("btnTogglePreviewAdd");
+            if (previewBtn) {
+                previewBtn.onclick = () => openPreviewDialog("tplMailBodyEditor");
+            }
+        });
+
+
+        /* 활성 템플릿 선택 (모니터링 / 보증보험 공용) */
+        let selectedTemplates = {
+            monitor: null,
+            renewal: null
+        };
+
+        // 활성 템플릿 선택 모달 열기
+        function openSelectTemplate(tabName) {
+            const dlg = document.getElementById("dlgSelectTpl");
+            const body = document.getElementById("selectTplBody");
+
+            if (!dlg || !body) {
+                alert("모달을 찾을 수 없습니다. dlgSelectTpl ID를 확인하세요.");
+                return;
+            }
+
+            dlg.showModal();
+
+            const list = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
+
+            if (list.length === 0) {
+                body.innerHTML = `<tr><td colspan="4">등록된 템플릿이 없습니다.</td></tr>`;
+                return;
+            }
+
+            body.innerHTML = list.map((tpl, i) => `
+    <tr>
+      <td>${tpl.type === "mail" ? "메일" : "알림톡"}</td>
+      <td>${tpl.type === "mail" ? tpl.mail_title : tpl.alim_code}</td>
+      <td style="max-width:400px; white-space:pre-wrap;">${tpl.type === "mail" ? tpl.mail_body : tpl.alim_body}</td>
+      <td><button class="select-btn" data-idx="${i}" data-tab="${tabName}">선택</button></td>
+    </tr>
+  `).join("");
+
+            // 각 선택 버튼에 클릭 이벤트 추가
+            document.querySelectorAll(".select-btn").forEach(btn => {
+                btn.addEventListener("click", (e) => {
+                    const idx = e.target.dataset.idx;
+                    const tab = e.target.dataset.tab;
+                    applyTemplate(tab, idx);
+                });
+            });
+        }
+
+
+        // 템플릿 선택
+        function applyTemplate(tabName, idx) {
+            const list = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
+            const tpl = list[idx];
+            if (!tpl) return alert("템플릿 정보를 찾을 수 없습니다.");
+
+            selectedTemplates[tabName] = tpl;
+            localStorage.setItem("selected_templates", JSON.stringify(selectedTemplates));
+
+            dlgSelectTpl.close();
+            alert(`'${tpl.type === "mail" ? tpl.mail_title : tpl.alim_code}' 템플릿이 선택되었습니다.`);
+            renderSelectedBadges();
+        }
+
+        // 뱃지 렌더링
+        function renderSelectedBadges() {
+            ["monitor", "renewal"].forEach(tab => {
+                const badgeId = tab === "monitor" ? "monitorBadge" : "renewalBadge";
+                const tpl = selectedTemplates[tab];
+                const container = document.getElementById(badgeId);
+                if (tpl) {
+                    container.innerHTML = `<span style="
+        background:#e0f2fe; 
+        color:#0369a1; 
+        padding:4px 10px; 
+        border-radius:12px; 
+        font-size:12px;">
+        ${tpl.type === "mail" ? tpl.mail_title : tpl.alim_code}
+      </span>`;
+                } else {
+                    container.innerHTML = `<span style="color:#9ca3af; font-size:12px;">선택된 템플릿 없음</span>`;
+                }
+            });
+        }
+
+        // 초기화
+        document.addEventListener("DOMContentLoaded", () => {
+            // 버튼 이벤트 연결
+            const btnMonitor = document.getElementById("btnSelectTplMonitor");
+            const btnRenewal = document.getElementById("btnSelectTplRenewal");
+
+            if (btnMonitor) {
+                btnMonitor.addEventListener("click", () => openSelectTemplate("monitor"));
+            }
+            if (btnRenewal) {
+                btnRenewal.addEventListener("click", () => openSelectTemplate("renewal"));
+            }
+        });
+
+        // 페이지 로드시 테이블 렌더링
+        document.addEventListener("DOMContentLoaded", renderTemplateDashboard);
+    </script>
+
+    <script src="preview.js"></script>
+</body>
+
+</html>
