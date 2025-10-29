@@ -444,8 +444,8 @@ WHERE company_id='${id}';`);
         const months = [curMonth - 3, curMonth - 2, curMonth - 1].map(m => (m <= 0 ? m + 12 : m));
         const monthLabel = months.map(m => `${m}월`).join(", ");
 
-        // 테이블 헤더 업데이트 "직전 3개월 청구액"은 현재 10번째
-        const headerCell = document.querySelector("#renewalTable thead th:nth-child(10)");
+        // 테이블 헤더 업데이트 "직전 3개월 청구액"은 현재 11번째
+        const headerCell = document.querySelector("#renewalTable thead th:nth-child(11)");
         if (headerCell) {
             headerCell.innerHTML = `▲▼ 직전 3개월 청구액<br>(${monthLabel})`;
         }
