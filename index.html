@@ -130,6 +130,7 @@
                     <th>회사명</th>
                     <th>계약 상태</th>
                     <th>갱신 구분</th>
+                    <th>활성 템플릿</th>
                     <th>증권번호</th>
                     <th>보증보험 기간</th>
                     <th>보증보험 만료일</th>
@@ -449,37 +450,71 @@ WHERE company_id='${id}';`);
             headerCell.innerHTML = `▲▼ 직전 3개월 청구액<br>(${monthLabel})`;
         }
         // 샘플 더미 데이터
-        const data = [
-            {
-                id: "frisbee", company: "프리스비", bmsStatus: "서비스중", renewType: "서비스",
-                policy: "2024-0544-5990", term: "2024.12.05 ~ 2025.12.04", expire: "2025-12-04",
-                amount: 3000000, billing: 5120000,
-                mail1: "2025-10-12 09:00", alim1: "2025-10-12 09:01",
-                mail2: "-", alim2: "-", status: "1차 완료", memo: "서류 대기 중"
-            },
-            {
-                id: "livlogi", company: "리브로지", bmsStatus: "계약해지", renewType: "보험",
-                policy: "2024-0517-3794", term: "2024.11.25 ~ 2025.11.26", expire: "2025-11-26",
-                amount: 3000000, billing: 1520000,
-                mail1: "2025-09-30 09:00", alim1: "2025-09-30 09:01",
-                mail2: "2025-10-10 09:00", alim2: "2025-10-10 09:01",
-                status: "갱신 완료", memo: "확인 완료"
-            },
-            {
-                id: "ysml626", company: "와이에스", bmsStatus: "테스트중", renewType: "서비스",
-                policy: "2024-0533-2690", term: "2024.10.15 ~ 2025.10.15", expire: "2025-10-15",
-                amount: 3000000, billing: 2750000,
-                mail1: "-", alim1: "-", mail2: "-", alim2: "-",
-                status: "대기", memo: ""
-            }
-        ];
+const data = [
+  {
+    id: "frisbee",
+    company: "프리스비",
+    bmsStatus: "서비스중",
+    renewType: "서비스",
+    policy: "2024-0544-5990",
+    term: "2024.12.05 ~ 2025.12.04",
+    expire: "2025-12-04",
+    amount: 3000000,
+    billing: 5120000,
+    mail1: "2025-10-12 09:00",
+    alim1: "2025-10-12 09:01",
+    mail2: "-",
+    alim2: "-",
+    status: "1차 완료",
+    memo: "서류 대기 중"
+  },
+  {
+    id: "livlogi",
+    company: "리브로지",
+    bmsStatus: "계약해지",
+    renewType: "보험",
+    policy: "2024-0517-3794",
+    term: "2024.11.25 ~ 2025.11.26",
+    expire: "2025-11-26",
+    amount: 3000000,
+    billing: 1520000,
+    mail1: "2025-09-30 09:00",
+    alim1: "2025-09-30 09:01",
+    mail2: "2025-10-10 09:00",
+    alim2: "2025-10-10 09:01",
+    status: "갱신 완료",
+    memo: "확인 완료"
+  },
+  {
+    id: "ysml626",
+    company: "와이에스",
+    bmsStatus: "테스트중",
+    renewType: "서비스",
+    policy: "2024-0533-2690",
+    term: "2024.10.15 ~ 2025.10.15",
+    expire: "2025-10-15",
+    amount: 3000000,
+    billing: 2750000,
+    mail1: "-",
+    alim1: "-",
+    mail2: "-",
+    alim2: "-",
+    status: "대기",
+    memo: ""
+  }
+];
 
         // 테이블 렌더링
         function renderRenewal(list) {
             const body = document.getElementById("renewalBody");
+        
             body.innerHTML = "";
 
+            const customerTemplates = JSON.parse(localStorage.getItem("customer_templates") || "{}");
+
             list.forEach(r => {
+                const activeTpl = customerTemplates[r.id]?.[r.renewType]?.tplName || "-";
+                
                 body.innerHTML += `
       <tr data-id="${r.id}">
         <td><input type="checkbox" class="row-check"></td>
@@ -492,6 +527,7 @@ WHERE company_id='${id}';`);
             <option value="보험" ${r.renewType === "보험" ? "selected" : ""}>보험</option>
           </select>
         </td>
+        <td>${activeTpl}</td>
         <td>${r.policy}</td>
         <td>${r.term}</td>
         <td>${r.expire}</td>
@@ -517,6 +553,52 @@ WHERE company_id='${id}';`);
 
             bindSaveRenewal();
         }
+
+        // 고객사별 템플릿 선택 모달 열기
+function openSelectTemplateForCustomers(customerIds) {
+  const dlg = document.getElementById("dlgSelectTpl");
+  const body = document.getElementById("selectTplBody");
+  dlg.showModal();
+
+  const list = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
+  if (!list.length) {
+    body.innerHTML = `<tr><td colspan="4">등록된 템플릿이 없습니다.</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = list.map((tpl, i) => `
+    <tr>
+      <td>${tpl.type === "mail" ? "메일" : "알림톡"}</td>
+      <td>${tpl.renew_type || "-"}</td>
+      <td>${tpl.type === "mail" ? tpl.mail_title : tpl.alim_code}</td>
+      <td><button class="select-btn" data-idx="${i}">선택</button></td>
+    </tr>
+  `).join("");
+
+  // 템플릿 선택 시 고객별 매핑 저장
+  document.querySelectorAll(".select-btn").forEach(btn => {
+    btn.addEventListener("click", e => {
+      const idx = e.target.dataset.idx;
+      const tplList = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
+      const tpl = tplList[idx];
+      const renewType = tpl.renew_type?.replace(" 갱신", "") || tpl.renew_type || "";
+
+      let mappings = JSON.parse(localStorage.getItem("customer_templates") || "{}");
+      customerIds.forEach(cid => {
+        if (!mappings[cid]) mappings[cid] = {};
+        mappings[cid][renewType] = {
+          tplId: idx,
+          tplName: tpl.mail_title || tpl.alim_code
+        };
+      });
+
+      localStorage.setItem("customer_templates", JSON.stringify(mappings));
+      dlg.close();
+      alert(`${customerIds.length}개 고객사에 '${tpl.mail_title || tpl.alim_code}' 템플릿이 적용되었습니다.`);
+      renderRenewal(data);
+    });
+  });
+}
 
         // 저장 및 select 변경 반영
         function bindSaveRenewal() {
@@ -623,23 +705,27 @@ WHERE company_id='${id}';`);
         });
 
         // 선택 메일 발송 버튼
-        document.getElementById("btnSendSelected").addEventListener("click", () => {
-            const selected = [...document.querySelectorAll("#renewalBody .row-check:checked")];
-            if (selected.length === 0) return alert("메일 발송할 고객사를 선택하세요.");
+document.getElementById("btnSendSelected").addEventListener("click", () => {
+  const selected = [...document.querySelectorAll("#renewalBody .row-check:checked")];
+  if (selected.length === 0) return alert("메일 발송할 고객사를 선택하세요.");
 
-            const ids = selected.map(cb => cb.closest("tr").dataset.id);
-            console.log(`선택된 고객사: ${ids.join(", ")}`);
+  const mappings = JSON.parse(localStorage.getItem("customer_templates") || "{}");
 
-            // 실제 발송 로직 대신 콘솔 출력
-            ids.forEach(id => {
-                console.log(`메일 발송 요청 → 고객ID: ${id}`);
-            });
+  selected.forEach(cb => {
+    const row = cb.closest("tr");
+    const id = row.dataset.id;
+    const renewType = row.querySelector(".renew-type-select").value;
+    const tpl = mappings[id]?.[renewType];
 
-            alert(`${ids.length}건의 메일 발송이 요청되었습니다.`);
+    if (!tpl) {
+      console.warn(`❌ 고객 ${id}: 매핑된 템플릿 없음`);
+    } else {
+      console.log(`📤 고객 ${id}: '${tpl.tplName}' 템플릿으로 발송`);
+    }
+  });
 
-            // 메일 발송 후 체크박스 선택 해제
-            selected.forEach(cb => cb.checked = false);
-        });
+  alert("선택 고객사 발송 요청 완료");
+});
 
         /* 템플릿 추가 모달 로직 */
         const btnAddTpl = document.getElementById("btnAddTpl");
@@ -1143,7 +1229,13 @@ WHERE company_id='${id}';`);
         document.addEventListener("DOMContentLoaded", () => {
             // 버튼 이벤트 연결
             const btnMonitor = document.getElementById("btnSelectTplMonitor");
-            const btnRenewal = document.getElementById("btnSelectTplRenewal");
+            document.getElementById("btnSelectTplRenewal").addEventListener("click", () => {
+  const selected = [...document.querySelectorAll("#renewalBody .row-check:checked")];
+  if (selected.length === 0) return alert("템플릿을 적용할 고객사를 선택하세요.");
+
+  const ids = selected.map(cb => cb.closest("tr").dataset.id);
+  openSelectTemplateForCustomers(ids);
+});
 
             if (btnMonitor) {
                 btnMonitor.addEventListener("click", () => openSelectTemplate("monitor"));
@@ -1154,7 +1246,8 @@ WHERE company_id='${id}';`);
         });
 
         // 페이지 로드시 테이블 렌더링
-        document.addEventListener("DOMContentLoaded", renderTemplateDashboard);
+        // document.addEventListener("DOMContentLoaded", renderTemplateDashboard);
+        // renderRenewal(data);
     </script>
 
     <script src="preview.js"></script>
