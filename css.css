@@ -384,3 +384,16 @@ tr.active-template:hover {
     display: block;
     margin-bottom: 6px;
 }
+
+.file-remove-btn, .file-remove-existing {
+  font-size: 14px;
+  color: #e11d48;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.file-remove-btn:hover,
+.file-remove-existing:hover {
+  color: #b91c1c;
+}

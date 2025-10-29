@@ -313,6 +313,12 @@
                     </div>
                 </div>
 
+                <div class="form-row" id="tplFileAddWrapper" style="display:none;">
+                    <div class="label">파일 첨부</div>
+                    <input id="tplFileAdd" type="file" multiple />
+                    <ul id="tplFileAddList" style="margin-top:8px; list-style:disc; padding-left:20px;"></ul>
+                </div>
+
                 <!-- 알림톡 템플릿 폼 -->
                 <div id="tplAlimForm" class="hidden">
                     <div class="form-row">
@@ -450,71 +456,71 @@ WHERE company_id='${id}';`);
             headerCell.innerHTML = `▲▼ 직전 3개월 청구액<br>(${monthLabel})`;
         }
         // 샘플 더미 데이터
-const data = [
-  {
-    id: "frisbee",
-    company: "프리스비",
-    bmsStatus: "서비스중",
-    renewType: "서비스",
-    policy: "2024-0544-5990",
-    term: "2024.12.05 ~ 2025.12.04",
-    expire: "2025-12-04",
-    amount: 3000000,
-    billing: 5120000,
-    mail1: "2025-10-12 09:00",
-    alim1: "2025-10-12 09:01",
-    mail2: "-",
-    alim2: "-",
-    status: "1차 완료",
-    memo: "서류 대기 중"
-  },
-  {
-    id: "livlogi",
-    company: "리브로지",
-    bmsStatus: "계약해지",
-    renewType: "보험",
-    policy: "2024-0517-3794",
-    term: "2024.11.25 ~ 2025.11.26",
-    expire: "2025-11-26",
-    amount: 3000000,
-    billing: 1520000,
-    mail1: "2025-09-30 09:00",
-    alim1: "2025-09-30 09:01",
-    mail2: "2025-10-10 09:00",
-    alim2: "2025-10-10 09:01",
-    status: "갱신 완료",
-    memo: "확인 완료"
-  },
-  {
-    id: "ysml626",
-    company: "와이에스",
-    bmsStatus: "테스트중",
-    renewType: "서비스",
-    policy: "2024-0533-2690",
-    term: "2024.10.15 ~ 2025.10.15",
-    expire: "2025-10-15",
-    amount: 3000000,
-    billing: 2750000,
-    mail1: "-",
-    alim1: "-",
-    mail2: "-",
-    alim2: "-",
-    status: "대기",
-    memo: ""
-  }
-];
+        const data = [
+            {
+                id: "frisbee",
+                company: "프리스비",
+                bmsStatus: "서비스중",
+                renewType: "서비스",
+                policy: "2024-0544-5990",
+                term: "2024.12.05 ~ 2025.12.04",
+                expire: "2025-12-04",
+                amount: 3000000,
+                billing: 5120000,
+                mail1: "2025-10-12 09:00",
+                alim1: "2025-10-12 09:01",
+                mail2: "-",
+                alim2: "-",
+                status: "1차 완료",
+                memo: "서류 대기 중"
+            },
+            {
+                id: "livlogi",
+                company: "리브로지",
+                bmsStatus: "계약해지",
+                renewType: "보험",
+                policy: "2024-0517-3794",
+                term: "2024.11.25 ~ 2025.11.26",
+                expire: "2025-11-26",
+                amount: 3000000,
+                billing: 1520000,
+                mail1: "2025-09-30 09:00",
+                alim1: "2025-09-30 09:01",
+                mail2: "2025-10-10 09:00",
+                alim2: "2025-10-10 09:01",
+                status: "갱신 완료",
+                memo: "확인 완료"
+            },
+            {
+                id: "ysml626",
+                company: "와이에스",
+                bmsStatus: "테스트중",
+                renewType: "서비스",
+                policy: "2024-0533-2690",
+                term: "2024.10.15 ~ 2025.10.15",
+                expire: "2025-10-15",
+                amount: 3000000,
+                billing: 2750000,
+                mail1: "-",
+                alim1: "-",
+                mail2: "-",
+                alim2: "-",
+                status: "대기",
+                memo: ""
+            }
+        ];
 
         // 테이블 렌더링
         function renderRenewal(list) {
             const body = document.getElementById("renewalBody");
-        
+
             body.innerHTML = "";
 
             const customerTemplates = JSON.parse(localStorage.getItem("customer_templates") || "{}");
 
             list.forEach(r => {
                 const activeTpl = customerTemplates[r.id]?.[r.renewType]?.tplName || "-";
-                
+
                 body.innerHTML += `
       <tr data-id="${r.id}">
         <td><input type="checkbox" class="row-check"></td>
@@ -555,18 +561,18 @@ const data = [
         }
 
         // 고객사별 템플릿 선택 모달 열기
-function openSelectTemplateForCustomers(customerIds) {
-  const dlg = document.getElementById("dlgSelectTpl");
-  const body = document.getElementById("selectTplBody");
-  dlg.showModal();
+        function openSelectTemplateForCustomers(customerIds) {
+            const dlg = document.getElementById("dlgSelectTpl");
+            const body = document.getElementById("selectTplBody");
+            dlg.showModal();
 
-  const list = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
-  if (!list.length) {
-    body.innerHTML = `<tr><td colspan="4">등록된 템플릿이 없습니다.</td></tr>`;
-    return;
-  }
+            const list = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
+            if (!list.length) {
+                body.innerHTML = `<tr><td colspan="4">등록된 템플릿이 없습니다.</td></tr>`;
+                return;
+            }
 
-  body.innerHTML = list.map((tpl, i) => `
+            body.innerHTML = list.map((tpl, i) => `
     <tr>
       <td>${tpl.type === "mail" ? "메일" : "알림톡"}</td>
       <td>${tpl.renew_type || "-"}</td>
@@ -575,30 +581,30 @@ function openSelectTemplateForCustomers(customerIds) {
     </tr>
   `).join("");
 
-  // 템플릿 선택 시 고객별 매핑 저장
-  document.querySelectorAll(".select-btn").forEach(btn => {
-    btn.addEventListener("click", e => {
-      const idx = e.target.dataset.idx;
-      const tplList = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
-      const tpl = tplList[idx];
-      const renewType = tpl.renew_type?.replace(" 갱신", "") || tpl.renew_type || "";
+            // 템플릿 선택 시 고객별 매핑 저장
+            document.querySelectorAll(".select-btn").forEach(btn => {
+                btn.addEventListener("click", e => {
+                    const idx = e.target.dataset.idx;
+                    const tplList = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
+                    const tpl = tplList[idx];
+                    const renewType = tpl.renew_type?.replace(" 갱신", "") || tpl.renew_type || "";
 
-      let mappings = JSON.parse(localStorage.getItem("customer_templates") || "{}");
-      customerIds.forEach(cid => {
-        if (!mappings[cid]) mappings[cid] = {};
-        mappings[cid][renewType] = {
-          tplId: idx,
-          tplName: tpl.mail_title || tpl.alim_code
-        };
-      });
+                    let mappings = JSON.parse(localStorage.getItem("customer_templates") || "{}");
+                    customerIds.forEach(cid => {
+                        if (!mappings[cid]) mappings[cid] = {};
+                        mappings[cid][renewType] = {
+                            tplId: idx,
+                            tplName: tpl.mail_title || tpl.alim_code
+                        };
+                    });
 
-      localStorage.setItem("customer_templates", JSON.stringify(mappings));
-      dlg.close();
-      alert(`${customerIds.length}개 고객사에 '${tpl.mail_title || tpl.alim_code}' 템플릿이 적용되었습니다.`);
-      renderRenewal(data);
-    });
-  });
-}
+                    localStorage.setItem("customer_templates", JSON.stringify(mappings));
+                    dlg.close();
+                    alert(`${customerIds.length}개 고객사에 '${tpl.mail_title || tpl.alim_code}' 템플릿이 적용되었습니다.`);
+                    renderRenewal(data);
+                });
+            });
+        }
 
         // 저장 및 select 변경 반영
         function bindSaveRenewal() {
@@ -705,48 +711,74 @@ WHERE company_id='${id}';`);
         });
 
         // 선택 메일 발송 버튼
-document.getElementById("btnSendSelected").addEventListener("click", () => {
-  const selected = [...document.querySelectorAll("#renewalBody .row-check:checked")];
-  if (selected.length === 0) return alert("메일 발송할 고객사를 선택하세요.");
+        document.getElementById("btnSendSelected").addEventListener("click", () => {
+            const selected = [...document.querySelectorAll("#renewalBody .row-check:checked")];
+            if (selected.length === 0) return alert("메일 발송할 고객사를 선택하세요.");
 
-  const mappings = JSON.parse(localStorage.getItem("customer_templates") || "{}");
+            const mappings = JSON.parse(localStorage.getItem("customer_templates") || "{}");
 
-  selected.forEach(cb => {
-    const row = cb.closest("tr");
-    const id = row.dataset.id;
-    const renewType = row.querySelector(".renew-type-select").value;
-    const tpl = mappings[id]?.[renewType];
+            selected.forEach(cb => {
+                const row = cb.closest("tr");
+                const id = row.dataset.id;
+                const renewType = row.querySelector(".renew-type-select").value;
+                const tpl = mappings[id]?.[renewType];
 
-    if (!tpl) {
-      console.warn(`❌ 고객 ${id}: 매핑된 템플릿 없음`);
-    } else {
-      console.log(`📤 고객 ${id}: '${tpl.tplName}' 템플릿으로 발송`);
-    }
-  });
+                if (!tpl) {
+                    console.warn(`❌ 고객 ${id}: 매핑된 템플릿 없음`);
+                } else {
+                    console.log(`📤 고객 ${id}: '${tpl.tplName}' 템플릿으로 발송`);
+                }
+            });
 
-  alert("선택 고객사 발송 요청 완료");
-});
+            alert("선택 고객사 발송 요청 완료");
+        });
 
-        /* 템플릿 추가 모달 로직 */
         const btnAddTpl = document.getElementById("btnAddTpl");
         const dlgAddTpl = document.getElementById("dlgAddTpl");
         const mailForm = document.getElementById("tplMailForm");
         const alimForm = document.getElementById("tplAlimForm");
 
-        // 라디오 전환
-        document.querySelectorAll("input[name='tplTypeRadio']").forEach(r => {
-            r.addEventListener("change", e => {
-                if (e.target.value === "mail") {
+        // 템플릿 추가 버튼 클릭 시 모달 열기
+        btnAddTpl.addEventListener("click", () => {
+            dlgAddTpl.showModal();
+
+            // 모달 내부 요소는 모달 열리고 나서 접근해야 함
+            setTimeout(() => {
+                const fileAddWrapper = document.getElementById("tplFileAddWrapper");
+                const mailForm = document.getElementById("tplMailForm");
+                const alimForm = document.getElementById("tplAlimForm");
+                const mailRadio = document.querySelector("input[name='tplTypeRadio'][value='mail']");
+                const alimRadio = document.querySelector("input[name='tplTypeRadio'][value='alim']");
+
+                // 현재 선택된 라디오값 기준으로 초기 표시
+                if (mailRadio.checked) {
                     mailForm.classList.remove("hidden");
                     alimForm.classList.add("hidden");
+                    fileAddWrapper.style.display = "block";
                 } else {
                     mailForm.classList.add("hidden");
                     alimForm.classList.remove("hidden");
+                    fileAddWrapper.style.display = "none";
                 }
-            });
+
+                // 라디오 전환 시 동적 토글
+                [mailRadio, alimRadio].forEach(radio => {
+                    radio.addEventListener("change", e => {
+                        if (e.target.value === "mail") {
+                            mailForm.classList.remove("hidden");
+                            alimForm.classList.add("hidden");
+                            fileAddWrapper.style.display = "block"; // 메일 선택 시 표시
+                        } else {
+                            mailForm.classList.add("hidden");
+                            alimForm.classList.remove("hidden");
+                            fileAddWrapper.style.display = "none"; // 알림톡 선택 시 숨김
+                        }
+                    });
+                });
+            }, 100); // 모달 렌더링 후 실행
         });
 
-        // 버튼 클릭 → 모달 열기
+        // 템플릿 추가 js 버튼 클릭 → 모달 열기
         btnAddTpl.addEventListener("click", () => {
             dlgAddTpl.showModal();
 
@@ -757,9 +789,11 @@ document.getElementById("btnSendSelected").addEventListener("click", () => {
             if (selectedType === "mail") {
                 mailForm.classList.remove("hidden");
                 alimForm.classList.add("hidden");
+                fileAddWrapper.style.display = "block";
             } else {
                 mailForm.classList.add("hidden");
                 alimForm.classList.remove("hidden");
+                fileAddWrapper.style.display = "none";
             }
         });
 
@@ -785,6 +819,80 @@ document.getElementById("btnSendSelected").addEventListener("click", () => {
                 document.execCommand(command, false, null);
             }
         }
+
+        // 첨부파일 선택 시 목록 표시 + 개별 삭제
+        document.getElementById("tplFileAdd").addEventListener("change", e => {
+            const fileList = e.target.files;
+            const ul = document.getElementById("tplFileAddList");
+            ul.innerHTML = "";
+
+            [...fileList].forEach((file, index) => {
+                const li = document.createElement("li");
+                li.style.display = "flex";
+                li.style.alignItems = "center";
+                li.style.justifyContent = "space-between";
+                li.innerHTML = `
+      <span>${file.name}</span>
+      <button type="button" class="file-remove-btn" data-index="${index}" style="margin-left:8px; border:none; background:none; color:red; cursor:pointer;">✕</button>
+    `;
+                ul.appendChild(li);
+            });
+
+            // 삭제 버튼 동작
+            ul.querySelectorAll(".file-remove-btn").forEach(btn => {
+                btn.addEventListener("click", e => {
+                    const idx = Number(e.target.dataset.index);
+                    const dt = new DataTransfer();
+                    [...fileList].forEach((f, i) => {
+                        if (i !== idx) dt.items.add(f);
+                    });
+                    e.target.closest("li").remove();
+                    e.target.closest("ul").previousElementSibling.files = dt.files; // input의 파일 목록 업데이트
+                    document.getElementById("tplFileAdd").files = dt.files;
+                });
+            });
+        });
+
+        // 템플릿 추가 모달
+        document.getElementById("btnAddTplConfirm").addEventListener("click", () => {
+            const type = document.querySelector("input[name='tplTypeRadio']:checked").value;
+            const renewType = document.getElementById("tplRenewTypeAdd")?.value || "";
+            const templateList = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
+
+            // 첨부 파일 목록 저장
+            const files = [...document.getElementById("tplFileAdd").files].map(f => f.name);
+
+            if (type === "mail") {
+                const title = document.getElementById("tplMailTitleInput").value.trim();
+                const body = document.getElementById("tplMailBodyEditor").innerHTML.trim();
+                if (!title || !body) return alert("제목과 내용을 입력하세요.");
+                templateList.push({
+                    type,
+                    mail_title: title,
+                    mail_body: body,
+                    renew_type: renewType,
+                    attachments: files,   // 파일 이름 저장
+                    is_active: false
+                });
+            } else {
+                const code = document.getElementById("tplAlimCodeInput").value.trim();
+                const body = document.getElementById("tplAlimBodyPreview").value.trim();
+                if (!code || !body) return alert("템플릿 코드와 본문을 입력하세요.");
+                templateList.push({
+                    type,
+                    alim_code: code,
+                    alim_body: body,
+                    renew_type: renewType,
+                    attachments: files,   // 파일 이름 저장
+                    is_active: false
+                });
+            }
+
+            localStorage.setItem("insurance_templates", JSON.stringify(templateList));
+            alert("템플릿이 추가되었습니다.");
+            dlgAddTpl.close();
+            renderTemplateDashboard();
+        });
 
         /* 템플릿 관리 대시보드 렌더링 */
         const templateBody = document.getElementById("templateBody");
@@ -956,6 +1064,13 @@ document.getElementById("btnSendSelected").addEventListener("click", () => {
   </select>
 </div>
 
+  <!-- 파일 첨부 -->
+  <div class="form-row">
+    <div class="label">파일 첨부</div>
+    <input id="tplFileEdit" type="file" multiple />
+    <ul id="tplFileEditList" style="margin-top:8px; list-style:disc; padding-left:20px;"></ul>
+  </div>
+
   <div class="form-row">
     <div class="label">메일 제목</div>
     <input id="editMailTitle" type="text" value="${tpl.mail_title}">
@@ -992,9 +1107,69 @@ document.getElementById("btnSendSelected").addEventListener("click", () => {
             const selectRenew = dlg.querySelector("#tplRenewTypeEdit");
             if (selectRenew) selectRenew.value = currentRenew;
 
+            // 첨부파일 처리
+            setTimeout(() => {
+                const ul = document.getElementById("tplFileEditList");
+                const fileInput = document.getElementById("tplFileEdit");
+
+                // ✅ 기존 첨부파일 표시 + 삭제 버튼
+                if (tpl.attachments?.length) {
+                    ul.innerHTML = tpl.attachments
+                        .map((f, i) => `
+        <li style="display:flex;align-items:center;justify-content:space-between;">
+          <span>${f}</span>
+          <button type="button" class="file-remove-existing" data-index="${i}" style="margin-left:8px; border:none; background:none; color:red; cursor:pointer;">✕</button>
+        </li>
+      `)
+                        .join("");
+
+                    // 기존 파일 삭제 이벤트
+                    ul.querySelectorAll(".file-remove-existing").forEach(btn => {
+                        btn.addEventListener("click", e => {
+                            const idx = Number(e.target.dataset.index);
+                            tpl.attachments.splice(idx, 1); // 실제 데이터에서 제거
+                            e.target.closest("li").remove();
+                        });
+                    });
+                }
+
+                // 새 파일 선택 시 목록 다시 그림 + 삭제 버튼
+                fileInput.addEventListener("change", e => {
+                    const fileList = e.target.files;
+                    ul.innerHTML = "";
+
+                    [...fileList].forEach((file, index) => {
+                        const li = document.createElement("li");
+                        li.style.display = "flex";
+                        li.style.alignItems = "center";
+                        li.style.justifyContent = "space-between";
+                        li.innerHTML = `
+        <span>${file.name}</span>
+        <button type="button" class="file-remove-btn" data-index="${index}" style="margin-left:8px; border:none; background:none; color:red; cursor:pointer;">✕</button>
+      `;
+                        ul.appendChild(li);
+                    });
+
+                    // 삭제 버튼 이벤트
+                    ul.querySelectorAll(".file-remove-btn").forEach(btn => {
+                        btn.addEventListener("click", e => {
+                            const idx = Number(e.target.dataset.index);
+                            const dt = new DataTransfer();
+                            [...fileList].forEach((f, i) => {
+                                if (i !== idx) dt.items.add(f);
+                            });
+                            e.target.closest("li").remove();
+                            e.target.closest("ul").previousElementSibling.files = dt.files;
+                            document.getElementById("tplFileEdit").files = dt.files;
+                        });
+                    });
+                });
+            }, 100);
+
             // 저장 시 갱신 구분 포함
             dlg.querySelector("#btnTplUpdate").onclick = () => {
                 const renewType = document.getElementById("tplRenewTypeEdit")?.value || "";
+                const files = [...document.getElementById("tplFileEdit").files].map(f => f.name);
 
                 if (tpl.type === "mail") {
                     const newTitle = document.getElementById("editMailTitle").value.trim();
@@ -1043,6 +1218,7 @@ document.getElementById("btnSendSelected").addEventListener("click", () => {
                     tpl.mail_title = newTitle;
                     tpl.mail_body = newBody;
                     tpl.renew_type = renewType;
+                    tpl.attachments = files.length ? files : tpl.attachments;
                 } else {
                     const newCode = document.getElementById("editAlimCode").value.trim();
                     const newBody = document.getElementById("editAlimBody").value.trim();
@@ -1059,42 +1235,7 @@ document.getElementById("btnSendSelected").addEventListener("click", () => {
                 renderTemplateDashboard();
             };
         }
-
-        /* 템플릿 추가 후 자동 반영 */
-        document.getElementById("btnAddTplConfirm").addEventListener("click", () => {
-            const type = document.querySelector("input[name='tplTypeRadio']:checked").value;
-            const renewType = document.getElementById("tplRenewTypeAdd")?.value || "";
-            const templateList = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
-
-            if (type === "mail") {
-                const title = document.getElementById("tplMailTitleInput").value.trim();
-                const body = document.getElementById("tplMailBodyEditor").innerHTML.trim();
-                if (!title || !body) return alert("제목과 내용을 입력하세요.");
-                templateList.push({
-                    type,
-                    mail_title: title,
-                    mail_body: body,
-                    renew_type: renewType,
-                    is_active: false
-                });
-            } else {
-                const code = document.getElementById("tplAlimCodeInput").value.trim();
-                const body = document.getElementById("tplAlimBodyPreview").value.trim();
-                if (!code || !body) return alert("템플릿 코드와 본문을 입력하세요.");
-                templateList.push({
-                    type,
-                    alim_code: code,
-                    alim_body: body,
-                    renew_type: renewType,
-                    is_active: false
-                });
-            }
-
-            localStorage.setItem("insurance_templates", JSON.stringify(templateList));
-            alert("템플릿이 추가되었습니다.");
-            dlgAddTpl.close();
-            renderTemplateDashboard();
-        });
+        renderTemplateDashboard();
 
         // HTML → 인코딩 (엔티티 변환)
         function escapeHtml(html) {
@@ -1230,12 +1371,12 @@ document.getElementById("btnSendSelected").addEventListener("click", () => {
             // 버튼 이벤트 연결
             const btnMonitor = document.getElementById("btnSelectTplMonitor");
             document.getElementById("btnSelectTplRenewal").addEventListener("click", () => {
-  const selected = [...document.querySelectorAll("#renewalBody .row-check:checked")];
-  if (selected.length === 0) return alert("템플릿을 적용할 고객사를 선택하세요.");
+                const selected = [...document.querySelectorAll("#renewalBody .row-check:checked")];
+                if (selected.length === 0) return alert("템플릿을 적용할 고객사를 선택하세요.");
 
-  const ids = selected.map(cb => cb.closest("tr").dataset.id);
-  openSelectTemplateForCustomers(ids);
-});
+                const ids = selected.map(cb => cb.closest("tr").dataset.id);
+                openSelectTemplateForCustomers(ids);
+            });
 
             if (btnMonitor) {
                 btnMonitor.addEventListener("click", () => openSelectTemplate("monitor"));
