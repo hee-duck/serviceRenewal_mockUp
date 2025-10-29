@@ -155,6 +155,7 @@
             <thead>
                 <tr>
                     <th>구분</th>
+                    <th>갱신 구분</th>
                     <th>제목</th>
                     <th>본문</th>
                     <th>수정</th>
@@ -191,7 +192,14 @@
                         <option value="alim">알림톡</option>
                     </select>
                 </div>
-
+                <div class="form-row">
+                    <div class="label">갱신 구분</div>
+                    <select id="tplRenewType">
+                        <option value="">선택 없음</option>
+                        <option value="서비스 갱신">서비스 갱신</option>
+                        <option value="보험 갱신">보험 갱신</option>
+                    </select>
+                </div>
                 <div class="form-row">
                     <div class="label">템플릿명</div>
                     <input id="tplName" type="text" placeholder="템플릿명을 입력하세요">
@@ -266,6 +274,14 @@
                     <div class="label">구분</div>
                     <label><input type="radio" name="tplTypeRadio" value="mail"> 메일</label>
                     <label><input type="radio" name="tplTypeRadio" value="alim" checked> 알림톡</label>
+                </div>
+                <div class="form-row">
+                    <div class="label">갱신 구분</div>
+                    <select id="tplRenewTypeAdd">
+                        <option value="">선택 없음</option>
+                        <option value="서비스 갱신">서비스 갱신</option>
+                        <option value="보험 갱신">보험 갱신</option>
+                    </select>
                 </div>
 
                 <!-- 메일 템플릿 폼 -->
@@ -707,10 +723,12 @@ WHERE company_id='${id}';`);
                     const content = t.type === "mail" ? t.mail_body : t.alim_body;
                     const text = stripHtml(content).trim().replace(/\s+/g, " ");
                     const preview = text.length > 100 ? text.slice(0, 100) + "..." : text;
+                    const renewLabel = t.renew_type || "-";
 
                     return `
         <tr data-idx="${i}">
           <td>${t.type === "mail" ? "메일" : "알림톡"}</td>
+          <td>${renewLabel}</td>
           <td>${t.type === "mail" ? t.mail_title : t.alim_code}</td>
           <td style="max-width:400px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
             ${preview}
@@ -725,7 +743,7 @@ WHERE company_id='${id}';`);
             // 기존 수정/삭제 바인딩
             bindTemplateEvents();
 
-            // ✅ 전체보기 버튼 클릭 이벤트는 별도 바인딩 (bindTemplateEvents() 뒤에 와야 함)
+            // 전체보기 버튼 클릭 이벤트는 별도 바인딩 (bindTemplateEvents() 뒤에 와야 함)
             document.querySelectorAll(".view-btn").forEach((btn) => {
                 btn.addEventListener("click", (e) => {
                     const idx = e.target.dataset.idx;
@@ -762,10 +780,10 @@ WHERE company_id='${id}';`);
                     const list = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
 
                     if (e.target.checked) {
-                        // ✅ 다른 모든 템플릿 비활성화, 현재만 활성화
+                        // 다른 모든 템플릿 비활성화, 현재만 활성화
                         list.forEach((t, i) => t.is_active = i === idx);
                     } else {
-                        // ✅ 마지막 활성템플릿은 비활성화 불가
+                        // 마지막 활성템플릿은 비활성화 불가
                         list[idx].is_active = false;
                         const activeCount = list.filter(t => t.is_active).length;
                         if (activeCount === 0) {
@@ -808,7 +826,7 @@ WHERE company_id='${id}';`);
             });
         }
 
-        /* 수정 모달 */
+        /* 템플릿 수정 모달 */
         function openTemplateEditModal(idx) {
             const list = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
             const tpl = list[idx];
@@ -835,10 +853,23 @@ WHERE company_id='${id}';`);
             }
 
             const body = dlg.querySelector("#editTplBody");
+            const currentRenew = tpl.renew_type || "";
 
             if (tpl.type === "mail") {
+                // 기존 갱신 구분 값 동적으로 선택
+                const selectedRenew = tpl.renew_type || "";
                 // 메일 에디터 (HTML 서식 유지)
                 body.innerHTML = `
+<!-- 갱신 구분 -->
+<div class="form-row">
+  <div class="label">갱신 구분</div>
+  <select id="tplRenewTypeEdit">
+    <option value="">선택 없음</option>
+    <option value="서비스 갱신">서비스 갱신</option>
+    <option value="보험 갱신">보험 갱신</option>
+  </select>
+</div>
+
   <div class="form-row">
     <div class="label">메일 제목</div>
     <input id="editMailTitle" type="text" value="${tpl.mail_title}">
@@ -871,6 +902,37 @@ WHERE company_id='${id}';`);
             }
 
             dlg.showModal();
+            // 기존 갱신 구분 값 자동 선택
+            const selectRenew = dlg.querySelector("#tplRenewTypeEdit");
+            if (selectRenew) selectRenew.value = currentRenew;
+
+            // 저장 시 갱신 구분 포함
+            dlg.querySelector("#btnTplUpdate").onclick = () => {
+                const renewType = document.getElementById("tplRenewTypeEdit")?.value || "";
+
+                if (tpl.type === "mail") {
+                    const newTitle = document.getElementById("editMailTitle").value.trim();
+                    const newBody = document.getElementById("editMailBody").innerHTML.trim();
+                    if (!newTitle || !newBody) return alert("제목과 본문을 모두 입력하세요.");
+                    tpl.mail_title = newTitle;
+                    tpl.mail_body = newBody;
+                    tpl.renew_type = renewType; // 추가 저장
+                } else {
+                    const newCode = document.getElementById("editAlimCode").value.trim();
+                    const newBody = document.getElementById("editAlimBody").value.trim();
+                    if (!newCode || !newBody) return alert("코드와 본문을 모두 입력하세요.");
+                    tpl.alim_code = newCode;
+                    tpl.alim_body = newBody;
+                    tpl.renew_type = renewType; // 추가 저장
+                }
+
+                list[idx] = tpl;
+                localStorage.setItem("insurance_templates", JSON.stringify(list));
+                dlg.close();
+                alert("템플릿이 수정되었습니다.");
+                renderTemplateDashboard();
+            };
+
 
             // 템플릿 수정 모달 내 미리보기 버튼 이벤트
             const previewBtn = document.getElementById("btnTogglePreviewEdit");
@@ -878,7 +940,7 @@ WHERE company_id='${id}';`);
                 previewBtn.onclick = () => openPreviewDialog("editMailBody");
             }
 
-            // 🔹 화면 높이에 맞춰 에디터 동적 크기 조정
+            // 화면 높이에 맞춰 에디터 동적 크기 조정
             const editor = dlg.querySelector(".editor");
             if (editor) {
                 const vh = window.innerHeight;
@@ -894,12 +956,14 @@ WHERE company_id='${id}';`);
                     if (!newTitle || !newBody) return alert("제목과 본문을 모두 입력하세요.");
                     tpl.mail_title = newTitle;
                     tpl.mail_body = newBody;
+                    tpl.renew_type = renewType;
                 } else {
                     const newCode = document.getElementById("editAlimCode").value.trim();
                     const newBody = document.getElementById("editAlimBody").value.trim();
                     if (!newCode || !newBody) return alert("코드와 본문을 모두 입력하세요.");
                     tpl.alim_code = newCode;
                     tpl.alim_body = newBody;
+                    tpl.renew_type = renewType;
                 }
 
                 list[idx] = tpl;
@@ -913,6 +977,7 @@ WHERE company_id='${id}';`);
         /* 템플릿 추가 후 자동 반영 */
         document.getElementById("btnAddTplConfirm").addEventListener("click", () => {
             const type = document.querySelector("input[name='tplTypeRadio']:checked").value;
+            const renewType = document.getElementById("tplRenewTypeAdd")?.value || "";
             const templateList = JSON.parse(localStorage.getItem("insurance_templates") || "[]");
 
             if (type === "mail") {
@@ -920,14 +985,22 @@ WHERE company_id='${id}';`);
                 const body = document.getElementById("tplMailBodyEditor").innerHTML.trim();
                 if (!title || !body) return alert("제목과 내용을 입력하세요.");
                 templateList.push({
-                    type, mail_title: title, mail_body: body, is_active: false
+                    type,
+                    mail_title: title,
+                    mail_body: body,
+                    renew_type: renewType,
+                    is_active: false
                 });
             } else {
                 const code = document.getElementById("tplAlimCodeInput").value.trim();
                 const body = document.getElementById("tplAlimBodyPreview").value.trim();
                 if (!code || !body) return alert("템플릿 코드와 본문을 입력하세요.");
                 templateList.push({
-                    type, alim_code: code, alim_body: body, is_active: false
+                    type,
+                    alim_code: code,
+                    alim_body: body,
+                    renew_type: renewType,
+                    is_active: false
                 });
             }
 
